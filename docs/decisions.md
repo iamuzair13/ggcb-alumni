@@ -115,8 +115,8 @@ numbers (D4/D2 import phase).
   directly) � `test:db` runs in CI's service container and locally via
   `docker compose`; specs skip cleanly when `TEST_DIRECT_URL` is unset.
 
-- **Supabase project exists** � ref `thgyfbnxonengnpfrmmk`
-  (`db.thgyfbnxonengnpfrmmk.supabase.co`), provisioned by the owner
+- **Supabase project exists** � ref `<project-ref>`
+  (`db.<project-ref>.supabase.co`), provisioned by the owner
   2026-11-23. Its Postgres major version is whatever the project was
   created with (check `select version();` � expected 15+; migrations were
   written/tested for 17-compatible SQL that is also valid on 15/16).
@@ -127,7 +127,7 @@ numbers (D4/D2 import phase).
   **Postmortem (2026-11-23, same-day):** schema applied on the real
   project � **PostgreSQL 17.12** confirmed. Direct host is IPv6-only on
   the free tier, so `DIRECT_URL` uses the session pooler
-  (`aws-1-ap-northeast-1.pooler.supabase.com:5432`); transaction pooler
+  (`<pooler-host>:5432`); transaction pooler
   stays for `DATABASE_URL`. `db:verify` ran green after two real
   findings: (a) Supabase `postgres` is not a superuser ? `0007`
   role-membership grant for `SET ROLE` probes; (b) `FOR EACH ROW` audit
@@ -137,7 +137,7 @@ numbers (D4/D2 import phase).
   applied via `DIRECT_URL`. Supavisor REQUIRES the `role.<ref>` username
   format for custom roles � plain `ggcb_app` is refused with
   `ENOIDENTIFIER no tenant identifier provided`; working `DATABASE_URL`
-  = `postgresql://ggcb_app.thgyfbnxonengnpfrmmk:***@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres`
+  = `postgresql://ggcb_app.<project-ref>:***@<pooler-host>:6543/postgres`
   (written to `.env.local`, verified `current_user=ggcb_app` + table
   reads). Document the `.<ref>` suffix in `docs/ops/db-runtime-role.md`.
 

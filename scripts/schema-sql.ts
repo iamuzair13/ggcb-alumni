@@ -1,25 +1,28 @@
 /**
- * db:schema — regenerate root schema.sql (one-time Supabase bootstrap).
- * Reads migrations/ verbatim and embeds the runner's EOL-normalised
- * checksums into pre-populated applied_migrations rows, so the output can
- * never drift from the migration files or the ledger contract.
+ * db:schema — regenerate docs/ops/schema-bootstrap.sql (one-time Supabase
+ * bootstrap). Reads migrations/ verbatim and embeds the runner's
+ * EOL-normalised checksums into pre-populated applied_migrations rows, so
+ * the output can never drift from the migration files or the ledger
+ * contract. CI fails when the committed file drifts (`pnpm db:schema` +
+ * `git diff --exit-code`).
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { listMigrationFiles, MIGRATIONS_DIR } from "./lib/runner";
 
-const OUT = join(process.cwd(), "schema.sql");
+const OUT = join(process.cwd(), "docs", "ops", "schema-bootstrap.sql");
 
 function main() {
   const files = listMigrationFiles();
   const lines: string[] = [
     "-- ============================================================================",
-    "-- schema.sql - ONE-TIME Supabase bootstrap (GENERATED - do not edit)",
+    "-- docs/ops/schema-bootstrap.sql — GENERATED point-in-time artifact.",
+    "-- DO NOT EDIT BY HAND. Regenerate with:  pnpm db:schema",
     "--",
     "-- Equivalent to running the migrations below through `pnpm db:migrate`,",
-    "-- assembled as a single file for the Supabase SQL editor. Regenerate with:",
-    "--   pnpm db:schema",
-    "--",
+    "-- assembled as a single file for the Supabase SQL editor. It reflects",
+    "-- the migrations as of generation time — always prefer the runner when",
+    "-- it is available.",
     "-- The applied_migrations ledger is pre-populated with the runner's",
     "-- EOL-normalised checksums, so the runner stays the source of truth:",
     "-- future changes go through `pnpm db:new` + `pnpm db:migrate`, never by",
@@ -68,7 +71,7 @@ function main() {
   );
   writeFileSync(OUT, lines.join("\n"));
   console.log(
-    `[db:schema] wrote schema.sql (${files.length} migrations embedded)`,
+    `[db:schema] wrote docs/ops/schema-bootstrap.sql (${files.length} migrations embedded)`,
   );
 }
 

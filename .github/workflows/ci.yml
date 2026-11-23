@@ -37,6 +37,11 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      - name: Bootstrap schema is not stale
+        run: |
+          pnpm db:schema
+          git diff --exit-code docs/ops/schema-bootstrap.sql
+
       - name: Build
         run: pnpm build
 

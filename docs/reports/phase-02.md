@@ -35,7 +35,7 @@ superadmin seed). No auth, email delivery, or feature code.
 ## 2. Postgres version
 
 **PostgreSQL 17.12** — confirmed on the provisioned Supabase project
-(`thgyfbnxonengnpfrmmk`, region ap-northeast-1) via `select version()` on
+(`<project-ref>`, region ap-northeast-1) via `select version()` on
 2026-11-23. Matches the PG-17 assumption.
 
 ## 3. Migrations (order + SHA-256, first 16 hex)
@@ -131,7 +131,7 @@ documents the exact regeneration commands; CI/dev runs fill it in.
 
 Updated 2026-11-23 — the owner's Supabase dev project went live during
 this phase, so most items moved from "unverified" to **verified on the
-real project** (`aws-1-ap-northeast-1.pooler.supabase.com`, PG 17.12):
+real project** (`<pooler-host>`, PG 17.12):
 
 | Item                                                          | Status                                                                                                                                                                                                |
 | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -150,7 +150,7 @@ applied, `0007`/`0008` applied via `pnpm db:migrate`, `pnpm db:verify`
 green, `ggcb_app` password set (`ALTER ROLE … LOGIN`), `DATABASE_URL`
 written to `.env.local` and verified (`current_user=ggcb_app` via
 transaction pooler `:6543`), superadmin seeded
-(`uzair.works3@gmail.com`) and given a working argon2id credential.
+(`<owner-email>`) and given a working argon2id credential.
 
 ## 11. Dependencies
 
