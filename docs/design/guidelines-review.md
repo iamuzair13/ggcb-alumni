@@ -1,0 +1,68 @@
+# UI review against web-design-guidelines
+
+Final pass over the phase-1 UI files with the `web-design-guidelines`
+skill. Findings are grouped by file; status is **fixed** (changed this
+phase) or **verified** (already conforming). Nothing left as "won't fix"
+without a note.
+
+## Interaction & composition
+
+| File                                            | Finding                                                                                                                                                                                   | Status |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `src/components/ui/button.tsx`                  | `loading` kept the label `visibility:hidden` → killed the accessible name (axe `button-name`, critical). Now `opacity-0` (keeps name AND layout — no CLS).                                | fixed  |
+| `src/components/ui/button.tsx`                  | `render={<Link/>}` needs `nativeButton={false}` or Base UI warns and semantics degrade.                                                                                                   | fixed  |
+| `src/app/design/page.tsx`                       | Base UI `render` prop: children must live on the rendered element, not the Trigger — empty trigger buttons fixed.                                                                         | fixed  |
+| `src/app/design/page.tsx` + `ui/form-field.tsx` | Base UI choice controls render `<span role="checkbox/radio/switch">` — `htmlFor` can't name them (names the visually-hidden input instead). Demo + future pattern uses `aria-labelledby`. | fixed  |
+| `src/components/ui/form-field.tsx`              | Was `"use client"` + render-prop children → broke the RSC boundary. `useId` works in Server Components, so the directive was removed.                                                     | fixed  |
+| `src/components/ui/tabs.tsx`                    | Inactive tabs used `text-foreground/60` (~4.1:1, axe `color-contrast`). Now `text-muted-foreground` (6.75:1).                                                                             | fixed  |
+| `src/components/ui/tabs.tsx` + `ui/sonner.tsx`  | `transition-all` → explicit `transition-colors`; `next-themes` dropped entirely (light-only palette, Toaster pinned `light`).                                                             | fixed  |
+
+## Typography & reading
+
+| File                     | Finding                                                                                                                 | Status   |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------- | -------- |
+| `src/app/layout.tsx`     | `antialiased` on `html` only once; fallbacks declared on every `next/font` family; `h1` only in page headers.           | verified |
+| `globals.css`, all pages | Long-form text uses `text-pretty`/`text-balance` (headings) and `max-w-prose` on paragraphs — no unbounded line length. | verified |
+| `globals.css`            | `tnum` variant for table numbers; `font-mono` reserved for identifiers (roll numbers, card IDs).                        | verified |
+
+## Layout & responsive
+
+| File                                                      | Finding                                                                                                                                                                                                | Status   |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| All pages                                                 | No global `overflow-x` hack; horizontal overflow prevented by a container-level `overflow-x-auto` on `DataTable`/table wrappers only. Proven by the 360px Playwright sweep (8 routes, no page scroll). | verified |
+| `src/components/ui/data-table.tsx`                        | Tables degrade to stacked `dl` cards under `sm` and scroll inside their own box above it — exactly the documented pattern.                                                                             | verified |
+| `src/app/(alumni)/layout.tsx`, `(admin)/admin/layout.tsx` | Mobile navigation via Base UI `Sheet`; `md:hidden`/`md:flex` splits; skip-link before everything.                                                                                                      | verified |
+| `src/components/ui/spinner.tsx`                           | `role="status"` + `aria-label` + visible label on the demo; aria-hidden when embedded inside a labelled button.                                                                                        | verified |
+
+## States & feedback
+
+| File                                                     | Finding                                                                                                                | Status   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------- |
+| `src/components/ui/empty.tsx`, `shared/empty-state.tsx`  | Empty states carry icon + title + action-oriented description — all placeholder pages use them instead of blank space. | verified |
+| `src/app/not-found.tsx`, `error.tsx`, `global-error.tsx` | Designed 404, boundary-aware error (console.log now, monitoring later), and a self-contained root-layout fallback.     | verified |
+| All controls                                             | `disabled:` + `aria-disabled:` styles with `cursor-not-allowed` + `opacity-50`; loading shown via Button `loading`.    | verified |
+
+## Accessibility
+
+| File                                                                  | Finding                                                                                                                                              | Status   |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `src/app/(auth)/*`                                                    | Inline links relied on hover-only underlines (axe `link-in-text-block`). Now permanently underlined with a soft `decoration-primary/40`.             | fixed    |
+| `src/app/(auth)/layout.tsx`, `(alumni)/layout.tsx`, `site-header.tsx` | `aria-label` on a logo link that contains text violated Label-in-Name — removed; accessible name now comes from the visible wordmark.                | fixed    |
+| `globals.css`                                                         | `@media (prefers-reduced-motion: reduce)` collapses animation/transition durations; focus ring is 3px `ring-ring/50` on every interactive primitive. | verified |
+| `src/components/ui/sheet.tsx`                                         | `SheetDescription` added as `sr-only` in nav sheets (Base UI requires a description for a11y).                                                       | verified |
+| Colour tokens                                                         | All measured pairs ≥ 4.5:1 (see design-system.md §5); `border`/`input` (1.36:1) is documented as decorative-only.                                    | verified |
+
+## Icons & images
+
+- lucide-react only; every decorative icon carries `aria-hidden="true"`;
+  icon-only controls (`Menu`, `MoreHorizontal`) carry `aria-label`.
+- `Avatar` uses initials fallback — no remote images this phase.
+
+## What the guidelines could not fully check
+
+- `serious`/`critical` axe results are now **zero** across `/design`, `/`,
+  `/login`, `/register`, `/dashboard`, `/admin` (Playwright axe suite,
+  retained as a regression gate).
+- Manual keyboard walkthrough of dialog/sheet/menu is covered by unit
+  tests (open, content exposed) rather than a visual pass — acceptable at
+  placeholder fidelity; real flows get interactive checks in later phases.
