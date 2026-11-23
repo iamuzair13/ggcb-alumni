@@ -39,6 +39,7 @@ pnpm dev
 | `pnpm db:verify`          | Security posture assertions (RLS, grants, policies)  |
 | `pnpm db:seed:superadmin` | Seed the password-less superadmin                    |
 | `pnpm db:explain`         | EXPLAIN baseline → docs/perf/db-baseline.md          |
+| `pnpm db:schema`          | Regenerate `schema.sql` (Supabase bootstrap)         |
 | `pnpm check`              | lint + typecheck + test + build (CI gate)            |
 
 ## Environment
