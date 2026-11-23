@@ -132,3 +132,11 @@ numbers (D4/D2 import phase).
   findings: (a) Supabase `postgres` is not a superuser ? `0007`
   role-membership grant for `SET ROLE` probes; (b) `FOR EACH ROW` audit
   triggers no-op on empty tables ? `0008` statement-level triggers.
+
+  **Resolved (same session):** `ALTER ROLE ggcb_app WITH LOGIN PASSWORD`
+  applied via `DIRECT_URL`. Supavisor REQUIRES the `role.<ref>` username
+  format for custom roles � plain `ggcb_app` is refused with
+  `ENOIDENTIFIER no tenant identifier provided`; working `DATABASE_URL`
+  = `postgresql://ggcb_app.thgyfbnxonengnpfrmmk:***@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres`
+  (written to `.env.local`, verified `current_user=ggcb_app` + table
+  reads). Document the `.<ref>` suffix in `docs/ops/db-runtime-role.md`.

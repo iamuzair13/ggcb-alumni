@@ -39,14 +39,15 @@ postgresql://<role>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
 The direct/migrations URL stays on port `5432` as `DIRECT_URL`
 (`postgresql://postgres:<db-password>@db.<ref>.supabase.co:5432/postgres`).
 
-**Not verified offline** (needs a real Supabase dev project — acceptance
-step for the owner):
+**Verified on the real project (2026-11-23):** Supavisor **requires** the
+`role.<project-ref>` username format for custom roles. Plain `ggcb_app` is
+refused with `ENOIDENTIFIER no tenant identifier provided`. Working
+runtime URL (already in the owner's `.env.local`):
 
-1. Whether the project pooler accepts non-`postgres` users on `:6543`
-   directly, or requires the `role.projectref` username format
-   (`ggcb_app.<project-ref>`). Supabase documents custom-role support via
-   the pooler; if plain `ggcb_app` is refused, use
-   `postgresql://ggcb_app.<project-ref>:<password>@aws-0-...:6543/postgres`.
+```
+postgresql://ggcb_app.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres
+```
+
 2. `search_path` set via `ALTER ROLE … SET` is honoured through the pooler
    in transaction mode — it is a server-side role setting, so it should be,
    but `citext` resolution in `extensions` schema is the concrete thing to
