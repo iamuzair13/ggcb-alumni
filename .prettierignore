@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+build
+coverage
+pnpm-lock.yaml
+pnpm-workspace.yaml
+playwright-report
+test-results
+public
+next-env.d.ts
+
+context.md
