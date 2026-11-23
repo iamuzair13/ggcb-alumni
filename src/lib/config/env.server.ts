@@ -44,6 +44,23 @@ const serverSchema = z.object({
   CRON_SECRET: z.string().min(16),
   // Dev-only query fan-out counter (context.md §7).
   DB_QUERY_STATS: z.enum(["true", "false"]).optional(),
+  // Pool size for the runtime postgres.js client (default 3).
+  DB_POOL_MAX: z.coerce.number().int().min(1).max(20).optional(),
+
+  // --- Script-scoped (never read by Next.js code paths; optional here so
+  // next build/start never requires them) ---
+  SEED_SUPERADMIN_EMAIL: z.email().optional(),
+  SEED_SUPERADMIN_NAME: z.string().min(1).optional(),
+  TEST_DIRECT_URL: z
+    .url()
+    .refine((v) => /^postgres(ql)?:\/\//.test(v), "must be a postgres URL")
+    .optional(),
+  TEST_DATABASE_URL: z
+    .url()
+    .refine((v) => /^postgres(ql)?:\/\//.test(v), "must be a postgres URL")
+    .optional(),
+  // Escape hatch for running migrations against non-local hosts.
+  MIGRATE_CONFIRM: z.literal("yes").optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;

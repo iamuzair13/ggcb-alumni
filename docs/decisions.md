@@ -78,3 +78,39 @@ phase, reversible only with a recorded reason), **Open-decision default**
 Owner input still needed later: official logo/brand colors (D1), SMTP
 provider (D10), consent wording (D11), Excel column mapping for roll
 numbers (D4/D2 import phase).
+
+## Prompt 2 � Database (phase-02-database)
+
+- **Custom forward-only migration runner** (`scripts/lib/runner.ts`) � no
+  ORM/migration framework (spec �4 forbids one; ~140 lines covers ledger,
+  advisory lock, checksums, gap detection). `applied_migrations` is
+  bootstrap-created by the runner, not by `0001`.
+- **`postgres` (postgres.js) runtime dep** � the locked driver (context.md
+  �3). `tsx` dev dep to run scripts under TypeScript � justified over
+  compiling scripts to JS or duplicating them.
+- **Node version**: Postgres **17** assumed (owner's Supabase major
+  unknown � recorded as an open item for the report).
+- **`session_version` on `users`** � added beyond �6's sketch so Prompt 3
+  can invalidate outstanding JWTs on password reset/deactivation without a
+  deny-list table.
+- **`ggcb_app` least-privilege runtime role** (NOLOGIN, NOBYPASSRLS):
+  grants + per-command RLS policies both required � a table missing either
+  is unreachable AND fails `db:verify`.
+- **`alumni.user_id` `ON DELETE SET NULL`** � deleting a login must never
+  destroy an alumni record (imported-only records have no login).
+- **`auth_tokens` `ON DELETE CASCADE`** � tokens are worthless without
+  their user; the only CASCADE in the schema.
+- **Gender values `male/female/other`** � mirrors the Excel-era
+  conventions; extendable via a later enum migration if the college wants
+  more values.
+- **One pending change request per alumnus** [Recommended] � partial
+  unique index; prevents duplicate review queues.
+- **`email_logs.status` stored as `text`** � logs must outlive enum
+  changes; the outbox itself uses the native `outbox_status` enum.
+- **No `cnic`, `sap_id`, `faculty_id`, `program_id` columns** � enforced by
+  `db:verify` + a test, not just convention.
+- **Test interlock**: destructive DB work requires a local host AND a
+  database name containing `test`; proven by `src/tests/unit/db-safety`.
+- **No local Postgres on the dev machine** (owner provisions Supabase
+  directly) � `test:db` runs in CI's service container and locally via
+  `docker compose`; specs skip cleanly when `TEST_DIRECT_URL` is unset.

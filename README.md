@@ -20,19 +20,26 @@ pnpm dev
 
 ## Scripts
 
-| Command              | Purpose                                              |
-| -------------------- | ---------------------------------------------------- |
-| `pnpm dev`           | Dev server                                           |
-| `pnpm build`         | Production build                                     |
-| `pnpm start`         | Serve the production build                           |
-| `pnpm lint`          | ESLint (includes client→server import boundary rule) |
-| `pnpm typecheck`     | `tsc --noEmit` (strict)                              |
-| `pnpm format`        | Prettier write                                       |
-| `pnpm format:check`  | Prettier check                                       |
-| `pnpm test`          | Vitest unit tests                                    |
-| `pnpm test:e2e`      | Playwright against the dev server                    |
-| `pnpm test:e2e:prod` | Playwright against a production build                |
-| `pnpm check`         | lint + typecheck + test + build (CI gate)            |
+| Command                   | Purpose                                              |
+| ------------------------- | ---------------------------------------------------- |
+| `pnpm dev`                | Dev server                                           |
+| `pnpm build`              | Production build                                     |
+| `pnpm start`              | Serve the production build                           |
+| `pnpm lint`               | ESLint (includes client→server import boundary rule) |
+| `pnpm typecheck`          | `tsc --noEmit` (strict)                              |
+| `pnpm format`             | Prettier write                                       |
+| `pnpm format:check`       | Prettier check                                       |
+| `pnpm test`               | Vitest unit tests                                    |
+| `pnpm test:e2e`           | Playwright against the dev server                    |
+| `pnpm test:e2e:prod`      | Playwright against a production build                |
+| `pnpm test:db`            | Vitest against real Postgres (needs TEST_* envs)     |
+| `pnpm db:migrate`         | Apply pending migrations (DIRECT_URL)                |
+| `pnpm db:status`          | Applied/pending migrations with checksums            |
+| `pnpm db:new`             | Create the next numbered migration file              |
+| `pnpm db:verify`          | Security posture assertions (RLS, grants, policies)  |
+| `pnpm db:seed:superadmin` | Seed the password-less superadmin                    |
+| `pnpm db:explain`         | EXPLAIN baseline → docs/perf/db-baseline.md          |
+| `pnpm check`              | lint + typecheck + test + build (CI gate)            |
 
 ## Environment
 
