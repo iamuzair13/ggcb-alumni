@@ -18,6 +18,7 @@
     "db:status": "tsx scripts/status.ts",
     "db:new": "tsx scripts/new.ts",
     "db:verify": "tsx scripts/verify.ts",
+    "db:schema": "tsx scripts/schema-sql.ts",
     "db:seed:superadmin": "tsx scripts/seed-superadmin.ts",
     "db:explain": "tsx scripts/explain.ts",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build",

@@ -26,7 +26,11 @@ export interface AppliedMigration {
 }
 
 export function checksum(contents: string): string {
-  return createHash("sha256").update(contents, "utf8").digest("hex");
+  // Normalise EOL first — checksums must be identical whether git checks the
+  // file out as LF (CI/Supabase) or CRLF (Windows autocrlf).
+  return createHash("sha256")
+    .update(contents.replace(/\r\n/g, "\n"), "utf8")
+    .digest("hex");
 }
 
 /** List on-disk migrations; fails loudly on gaps, duplicates, bad names. */
