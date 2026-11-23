@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 
 import {
   AlumniDesktopNav,
@@ -10,29 +9,35 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Logo } from "@/components/shared/logo";
 import { SkipLink } from "@/components/shared/skip-link";
 import { QueryProvider } from "@/providers/query-provider";
-import { requireRole } from "@/server/auth/session";
+import { requireRole, type SessionUser } from "@/server/auth/session";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
 /**
- * Alumni shell. requireRole(['alumni']) is the security boundary — inside
- * Suspense because session reads are dynamic under Cache Components.
+ * Alumni shell — requireRole(['alumni']) is the security boundary, awaited
+ * OUTSIDE Suspense so redirect()/forbidden() are real HTTP statuses (a
+ * streamed fallback can't set 403/307). Protected pages are inherently
+ * dynamic — there is no shared static shell worth prerendering.
  */
-export default function AlumniLayout({ children }: LayoutProps<"/">) {
+export default async function AlumniLayout({ children }: LayoutProps<"/">) {
+  const user = await requireRole(["alumni"], { callbackPath: "/dashboard" });
   return (
     <QueryProvider>
       <SkipLink />
-      <Suspense>
-        <AlumniShell>{children}</AlumniShell>
-      </Suspense>
+      <AlumniShell user={user}>{children}</AlumniShell>
     </QueryProvider>
   );
 }
 
-async function AlumniShell({ children }: { children: React.ReactNode }) {
-  const user = await requireRole(["alumni"], { callbackPath: "/dashboard" });
+function AlumniShell({
+  user,
+  children,
+}: {
+  user: SessionUser;
+  children: React.ReactNode;
+}) {
   return (
     <>
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-sm">

@@ -20,6 +20,12 @@ function isActive(pathname: string, href: string) {
   return href === "/admin" ? pathname === href : pathname.startsWith(href);
 }
 
+/** Server passes serializable hrefs; icons/items resolve client-side. */
+function resolveItems(hrefs?: string[]): NavItem[] {
+  if (!hrefs) return ADMIN_NAV_ITEMS;
+  return ADMIN_NAV_ITEMS.filter((i) => hrefs.includes(i.href));
+}
+
 function AdminNavList({
   items,
   onNavigate,
@@ -57,24 +63,16 @@ function AdminNavList({
 }
 
 /** Fixed desktop sidebar (≥ md). */
-export function AdminSidebar({
-  items = ADMIN_NAV_ITEMS,
-}: {
-  items?: NavItem[];
-}) {
+export function AdminSidebar({ hrefs }: { hrefs?: string[] }) {
   return (
     <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-60 shrink-0 overflow-y-auto border-r bg-sidebar px-3 py-4 md:block">
-      <AdminNavList items={items} />
+      <AdminNavList items={resolveItems(hrefs)} />
     </aside>
   );
 }
 
 /** Collapsible sidebar for mobile — lives inside the admin topbar. */
-export function AdminMobileNav({
-  items = ADMIN_NAV_ITEMS,
-}: {
-  items?: NavItem[];
-}) {
+export function AdminMobileNav({ hrefs }: { hrefs?: string[] }) {
   return (
     <Sheet>
       <SheetTrigger
@@ -92,7 +90,7 @@ export function AdminMobileNav({
             Admin section navigation
           </SheetDescription>
         </SheetHeader>
-        <AdminNavList items={items} />
+        <AdminNavList items={resolveItems(hrefs)} />
       </SheetContent>
     </Sheet>
   );

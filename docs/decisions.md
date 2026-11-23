@@ -168,9 +168,10 @@ private, no-store`; it never _grants_ access. Every guarded
   layout/action/route rechecks server-side.
 - **Cache-Components nuance discovered:** `auth()` inside RSC requires
   `await connection()` first (crypto reads are "unstable values"), and
-  redirects thrown inside `<Suspense>` become _streamed client-side_
-  redirects — correct, but they are not HTTP 307s. Documented in
-  `docs/security/authz-matrix.md` and the phase report.
+  `redirect()`/`forbidden()` thrown inside `<Suspense>` become _streamed_
+  fallbacks that cannot set HTTP 307/403 — so protected guards run
+  OUTSIDE Suspense (fully dynamic protected pages, real statuses).
+  Only guest-page bounces (`GuestRedirect`) accept the streamed path.
 - **Session refresh ≤ 5 min + `fresh` guard** — `checkedAt` in the JWT
   triggers one `recheckUser` query (active + role + session_version) at
   most every five minutes; `fresh: true` forces it for sensitive

@@ -11,7 +11,7 @@ import { signIn, signOut } from "@/auth";
 import { sanitizeCallbackUrl } from "@/server/auth/callback-url";
 import { policyFor } from "@/server/auth/route-policy";
 import { AUTH_ERROR_CODES } from "@/server/auth/errors";
-import { getSession } from "@/server/auth/session";
+import { roleForEmail } from "@/server/auth/session";
 import type { Role } from "@/lib/constants/roles";
 
 export interface LoginFormState {
@@ -70,9 +70,10 @@ export async function loginAction(
     throw e;
   }
 
-  // Signed in — pick the target the role is actually allowed to see.
-  const session = await getSession();
-  const role = (session?.user?.role ?? "alumni") as Role;
+  // Signed in — pick the target the role is actually allowed to see. The
+  // just-issued session cookie isn't visible to getSession() in this same
+  // request, so the role is re-read (one indexed query).
+  const role = ((await roleForEmail(String(email))) ?? "alumni") as Role;
   redirect(permittedTarget(callbackUrl || roleHome(role), role));
 }
 

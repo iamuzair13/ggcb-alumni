@@ -107,6 +107,18 @@ export async function requireAlumni(
   return { ...user, verifyStatus };
 }
 
+/**
+ * Role for an email — used by the login action AFTER signIn succeeds:
+ * the just-issued cookie isn't visible to getSession() in the same
+ * request, so the role is re-read (one indexed query).
+ */
+export async function roleForEmail(email: string): Promise<Role | null> {
+  const [row] = await sql<{ role: string }[]>`
+    SELECT role::text AS role FROM users WHERE email = ${email}
+  `;
+  return (row?.role as Role | undefined) ?? null;
+}
+
 /** Bump session_version — invalidates every outstanding session/JWT. */
 export async function invalidateUserSessions(userId: string): Promise<void> {
   await sql`UPDATE users SET session_version = session_version + 1 WHERE id = ${userId}`;

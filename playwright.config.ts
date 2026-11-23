@@ -3,7 +3,13 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Dev-server e2e suite. For the production-build suite see
  * playwright.prod.config.ts (`pnpm test:e2e:prod`).
+ *
+ * E2E_BASE_URL lets a local run reuse an already-running dev server
+ * (Next 16 allows only ONE `next dev` per project directory):
+ *   $env:E2E_BASE_URL="http://localhost:3000"; pnpm test:e2e
  */
+const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3100";
+
 export default defineConfig({
   testDir: "./src/tests/e2e",
   testIgnore: ["**/prod/**"],
@@ -14,7 +20,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: "http://localhost:3100",
+    baseURL,
     trace: "on-first-retry",
   },
   projects: [
@@ -25,7 +31,7 @@ export default defineConfig({
   ],
   webServer: {
     command: "pnpm dev --port 3100",
-    url: "http://localhost:3100/api/health",
+    url: `${baseURL}/api/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },

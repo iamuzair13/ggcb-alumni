@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 
 import { AdminBreadcrumb } from "@/components/layout/admin-breadcrumb";
 import { AdminMobileNav, AdminSidebar } from "@/components/layout/admin-nav";
@@ -8,7 +7,7 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Logo } from "@/components/shared/logo";
 import { SkipLink } from "@/components/shared/skip-link";
 import { QueryProvider } from "@/providers/query-provider";
-import { requireStaff } from "@/server/auth/session";
+import { requireStaff, type SessionUser } from "@/server/auth/session";
 import { adminNavForRole } from "@/server/auth/nav";
 import { ROLE_LABELS } from "@/lib/constants/roles";
 
@@ -17,29 +16,36 @@ export const metadata: Metadata = {
 };
 
 /**
- * Admin shell. Authorization runs in the AsyncShell inside Suspense —
- * requireStaff() is the security boundary (the nav filtering is cosmetic).
+ * Admin shell — requireStaff() is the security boundary, awaited OUTSIDE
+ * Suspense so redirect()/forbidden() produce real HTTP statuses (a
+ * streamed fallback can't set 403/307). Page-level guards (e.g.
+ * requireRole(['superadmin'])) benefit the same way. Protected pages are
+ * inherently dynamic — no shared static shell to prerender.
  */
-export default function AdminLayout({ children }: LayoutProps<"/">) {
+export default async function AdminLayout({ children }: LayoutProps<"/">) {
+  const user = await requireStaff({ callbackPath: "/admin" });
   return (
     <QueryProvider>
       <SkipLink />
-      <Suspense>
-        <AdminShell>{children}</AdminShell>
-      </Suspense>
+      <AdminShell user={user}>{children}</AdminShell>
     </QueryProvider>
   );
 }
 
-async function AdminShell({ children }: { children: React.ReactNode }) {
-  const user = await requireStaff({ callbackPath: "/admin" });
-  const navItems = adminNavForRole(user.role);
+function AdminShell({
+  user,
+  children,
+}: {
+  user: SessionUser;
+  children: React.ReactNode;
+}) {
+  const navHrefs = adminNavForRole(user.role);
 
   return (
     <>
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-sm">
         <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
-          <AdminMobileNav items={navItems} />
+          <AdminMobileNav hrefs={navHrefs} />
           <Link
             href="/admin"
             aria-label="Admin dashboard"
@@ -63,7 +69,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <div className="flex">
-        <AdminSidebar items={navItems} />
+        <AdminSidebar hrefs={navHrefs} />
         <div className="min-w-0 flex-1">
           <div className="border-b bg-background px-4 py-3 sm:px-6 lg:px-8">
             <AdminBreadcrumb />

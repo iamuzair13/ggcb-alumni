@@ -137,9 +137,17 @@ SecLists `10k-most-common.txt` — MIT, provenance + regen steps in
 - `auth()` inside RSC **must** be preceded by `await connection()` —
   its crypto reads are "unstable values" under Cache Components
   (was a hard error before the fix).
-- Redirects thrown inside `<Suspense>` are **streamed client-side**
-  redirects, not HTTP 307 — correct, and the matrix doc says so.
-  Cookie-less requests still get a real 307 from `proxy.ts`.
+- **`forbidden()`/`redirect()` inside `<Suspense>` cannot set HTTP
+  statuses** — the shell has already streamed, so a guarded layout
+  emits a broken streamed fallback ("could not validate instant", status
+  200). The guards were moved OUTSIDE Suspense: protected layouts await
+  `requireStaff`/`requireRole` at the top level, so wrong-role gets a
+  real **403** and anonymous a real **307** (cookie-less users also get
+  an early 307 from `proxy.ts`). Consequence: protected pages are fully
+  dynamic — correct, since there is no shareable static shell.
+- Guest pages (`/login` etc.) keep `GuestRedirect` inside Suspense —
+  a signed-in user hitting a guest page is a UX bounce, not a security
+  boundary, and the streamed redirect is correct there.
 - `searchParams` awaits must live inside Suspense too.
 
 ## 10. Results
