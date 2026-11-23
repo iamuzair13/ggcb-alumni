@@ -34,9 +34,9 @@ phase, reversible only with a recorded reason), **Open-decision default**
 - **shadcn-style primitives on Base UI (base-nova), not Radix** — the
   generated set targets `@base-ui/react`. Restyled to tokens; components
   are local source, owned by the repo.
-- **`cn` dependency** — generated components import `cn` from the tiny
-  `cn` npm package (clsx + tailwind-merge wrapper). `src/lib/utils`
-  re-exports it so app code uses the `@/lib/utils` alias.
+- **`cn` is local** (`@/lib/utils` = clsx + tailwind-merge) — the `cn`
+  npm package was removed; a `no-restricted-imports` ESLint rule blocks it
+  from being re-introduced if a future `shadcn add` emits `from "cn"`.
 - **Light-only palette** — dark-mode tokens exist in `globals.css` as a
   stub but nothing ships dark UI; Toaster is pinned `theme="light"`.
 - **`FormField` wrapper** (`ui/form-field.tsx`) — label + required marker

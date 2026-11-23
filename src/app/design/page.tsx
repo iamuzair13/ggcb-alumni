@@ -160,7 +160,7 @@ const tableRows: AlumniRow[] = [
   {
     id: 1,
     name: "Sample Alumni A",
-    roll: "2019-BS-001",
+    roll: "Roll number",
     dept: "Computer Science",
     year: 2023,
     status: "verified",
@@ -168,7 +168,7 @@ const tableRows: AlumniRow[] = [
   {
     id: 2,
     name: "Sample Alumni B",
-    roll: "2019-BS-014",
+    roll: "Roll number",
     dept: "English",
     year: 2023,
     status: "under_approval",
@@ -176,7 +176,7 @@ const tableRows: AlumniRow[] = [
   {
     id: 3,
     name: "Sample Alumni C",
-    roll: "2020-BS-007",
+    roll: "Roll number",
     dept: "Mathematics",
     year: 2024,
     status: "rejected",
@@ -282,7 +282,7 @@ export default function DesignPage() {
               Small / muted — captions, hints, secondary information.
             </p>
             <p className="font-mono text-sm">
-              Mono — 2019-BS-001, CARD-2026-00042 (identifiers)
+              Mono — identifiers (roll numbers, card numbers)
             </p>
             <p className="tnum text-sm">
               Tabular numbers — 1,024 · 9,876 · 12,345
@@ -350,7 +350,7 @@ export default function DesignPage() {
                   id={id}
                   aria-invalid="true"
                   aria-describedby={describedBy}
-                  defaultValue="2019-BS-001"
+                  defaultValue="Roll number"
                 />
               )}
             </FormField>

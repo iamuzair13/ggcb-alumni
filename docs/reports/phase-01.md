@@ -1,6 +1,6 @@
 # Phase 1 completion report — Foundation
 
-Date: 2026-03-31 · Branch: `phase-01-foundation` · Scope: Prompt 1 of 14
+Date: 2026-11-23 · Branch: `phase-01-foundation` · Scope: Prompt 1 of 14
 (discovery, initialization, tooling, design system, shared primitives, empty
 audience shells). No database, auth, email, or feature modules were started.
 
@@ -80,8 +80,8 @@ Runtime: `next`, `react`, `react-dom` (framework) · `@base-ui/react`
 (headless primitives the generated components target) · `lucide-react`
 (icons) · `sonner` (toast) · `@tanstack/react-query` (query layer,
 wired in alumni/admin shells) · `zod` (env + future request validation) ·
-`clsx`, `tailwind-merge`, `cn` (class merging; `cn` is what the generated
-code imports) · `class-variance-authority` (variant APIs) ·
+`clsx`, `tailwind-merge` (class merging via `cn` in `@/lib/utils`) ·
+`class-variance-authority` (variant APIs) ·
 `tw-animate-css` (micro-animations) · `server-only` (import-time guard for
 `src/server/**`).
 
@@ -196,9 +196,9 @@ Full record in `docs/decisions.md`. Highlights:
 - `process.env.NODE_ENV` guard for `/design` — safe for this phase;
   `VERCEL_ENV` would be more precise once preview environments exist
   (Prompt 2+ can switch it).
-- `cn` package vs `@/lib/utils` — both work; generated code uses the
-  package. Normalised and documented rather than rewritten (gen-output
-  compatibility for future `shadcn add`).
+- `cn` npm package removed in fix-up — all components now import `cn` from
+  `@/lib/utils`; a `no-restricted-imports` ESLint rule fails lint if a
+  future `shadcn add` re-emits `from "cn"`.
 - Killed one stale `next dev` (PID 13548) to run e2e — no user impact.
 
 ## 12. Handoff to Prompt 2
@@ -211,12 +211,18 @@ already validated); `migrations/` (empty, with `.gitkeep`); `.env.example`
 `api/client.ts` + `query-provider.tsx` (fetch conventions);
 `docs/decisions.md` (record every new choice there).
 
-Prompt 2 scope per plan: `departments`/`alumni`/`staff_users`/supporting
-tables per `context.md` §4, migration ledger, RLS deny-all baseline
-policies, the seed superadmin, and server-side DB access layer.
+Prompt 2 scope per plan: the schema in `context.md` §6 — **one `users`
+table carrying all login identities (staff and alumni)** with the role
+enum, plus `departments`, `alumni` (nullable `user_id` FK into `users` for
+imported-only records), and the remaining §6 tables as sliced by the
+14-prompt plan. Also the migration ledger (`applied_migrations`), RLS
+deny-all baseline policies, the seed superadmin, and the server-side DB
+access layer.
 
 Owner questions still open: logo/brand colors + contact email (D1), SMTP
-provider (D10), consent wording (D11), Excel column mapping (D4).
+provider (D10), consent wording (D11). The Excel column mapping is a
+feature (`context.md` §4.9) built in the import phase, not an owner
+question.
 
 ### Exact local commands
 

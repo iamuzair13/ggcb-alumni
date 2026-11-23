@@ -17,6 +17,19 @@ const eslintConfig = defineConfig([
     },
     rules: {
       "ggcb/no-server-imports-in-client": "error",
+      // `cn` must come from "@/lib/utils" — if `shadcn add` ever emits
+      // `from "cn"` again, lint fails instead of re-introducing the package.
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "cn",
+              message: 'Import { cn } from "@/lib/utils" instead.',
+            },
+          ],
+        },
+      ],
     },
   },
   globalIgnores([

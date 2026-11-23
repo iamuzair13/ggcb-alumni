@@ -49,7 +49,7 @@ export default function RegisterPage() {
               name="rollNumber"
               autoComplete="off"
               spellCheck={false}
-              placeholder="e.g. 2019-BS-001…"
+              placeholder="Enter your roll number…"
               aria-describedby={describedBy}
             />
           )}
