@@ -148,3 +148,47 @@ numbers (D4/D2 import phase).
   `allowBuilds` approves `argon2`/`esbuild` install scripts (pnpm 12
   strict-builds mode; sharp/unrs-resolver remain denied). Prompt 3's
   set-password flow can rotate it anytime.
+
+## Prompt 3 — Authentication & RBAC (phase-03-auth)
+
+- **`next-auth@5.0.0-beta.32` pinned** — Auth.js v5 (beta line is the only
+  App-Router-native line; peers allow `next@^16` + `react@^19`). No
+  adapter — the `users` table is the identity store.
+- **Credentials-only, JWT sessions (1h)** — stateless, no session table.
+  JWT carries `sub`, `name`, `role`, `sessionVersion`, `checkedAt` only —
+  no email/PII (context.md §7 privacy posture).
+- **`forbidden()` + `forbidden.tsx` for wrong-role (explicit 403, never 404)** — requires `experimental.authInterrupts` on Next 16.4.6 (flag
+  enabled; the primitive is stable in intent, the flag gate is the only
+  experimental part). Chosen over `notFound()` because a disguised 404
+  both leaks less _and_ communicates less — the spec requires an explicit
+  Forbidden surface.
+- **Server guards are authoritative; `proxy.ts` is early routing only** —
+  it redirects cookie-less users fast and sets `Cache-Control:
+private, no-store`; it never _grants_ access. Every guarded
+  layout/action/route rechecks server-side.
+- **Cache-Components nuance discovered:** `auth()` inside RSC requires
+  `await connection()` first (crypto reads are "unstable values"), and
+  redirects thrown inside `<Suspense>` become _streamed client-side_
+  redirects — correct, but they are not HTTP 307s. Documented in
+  `docs/security/authz-matrix.md` and the phase report.
+- **Session refresh ≤ 5 min + `fresh` guard** — `checkedAt` in the JWT
+  triggers one `recheckUser` query (active + role + session_version) at
+  most every five minutes; `fresh: true` forces it for sensitive
+  operations.
+- **Rate limit keyed on HMAC(secret, email|ip|pair)** — email/IP are never
+  stored in `auth_attempts` (opaque `key_hash` only); three buckets:
+  5 per email+ip, 30 per ip, 20 per email — 15-min rolling window, all
+  failure rows written in ONE multi-row insert to respect the ≤5-query
+  request budget. Blocked attempts write _nothing_ so lockouts decay.
+- **Argon2id (m=19456, t=2, p=1)** — OWASP-cheatsheet parameters; verify
+  is params-agnostic so `needsRehash` upgrades old hashes lazily on
+  successful login. `serverExternalPackages: ["argon2"]` keeps the N-API
+  binding out of the bundle.
+- **Common-password blocklist: SecLists 10k-most-common (MIT)** — provenance
+  - regeneration documented in `docs/security/password-blocklist.md`.
+- **Later-phase env vars relaxed to optional** — `SMTP_*`, `SUPABASE_*`,
+  `CRON_SECRET` were required in Phase 2 but nothing used them; Prompt 3's
+  production start proved that premature. Each later prompt flips its own
+  vars to required.
+- **`pnpm authz:matrix`** generates `docs/security/authz-matrix.md`; a
+  unit test fails when the file drifts from the route policy.

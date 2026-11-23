@@ -8,7 +8,7 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { listMigrationFiles, MIGRATIONS_DIR } from "./lib/runner";
+import { listMigrationFiles } from "./lib/runner";
 
 const OUT = join(process.cwd(), "docs", "ops", "schema-bootstrap.sql");
 

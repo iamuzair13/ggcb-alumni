@@ -22,7 +22,9 @@
     "db:seed:superadmin": "tsx scripts/seed-superadmin.ts",
     "db:explain": "tsx scripts/explain.ts",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build",
-    "prepare": "husky"
+    "prepare": "husky",
+    "auth:set-password": "tsx scripts/auth-set-password.ts",
+    "authz:matrix": "tsx scripts/authz-matrix.ts"
   },
   "engines": {
     "node": ">=24 <25",
@@ -36,6 +38,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.77.0",
     "next": "16.4.6",
+    "next-auth": "5.0.0-beta.32",
     "postgres": "^4.1.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",

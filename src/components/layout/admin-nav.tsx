@@ -13,19 +13,25 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { ADMIN_NAV_ITEMS } from "@/lib/constants/navigation";
+import { ADMIN_NAV_ITEMS, type NavItem } from "@/lib/constants/navigation";
 import { cn } from "@/lib/utils";
 
 function isActive(pathname: string, href: string) {
   return href === "/admin" ? pathname === href : pathname.startsWith(href);
 }
 
-function AdminNavList({ onNavigate }: { onNavigate?: () => void }) {
+function AdminNavList({
+  items,
+  onNavigate,
+}: {
+  items: NavItem[];
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
 
   return (
     <nav aria-label="Admin sections" className="flex flex-col gap-1">
-      {ADMIN_NAV_ITEMS.map((item) => {
+      {items.map((item) => {
         const Icon = item.icon;
         const active = isActive(pathname, item.href);
         return (
@@ -51,16 +57,24 @@ function AdminNavList({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 /** Fixed desktop sidebar (≥ md). */
-export function AdminSidebar() {
+export function AdminSidebar({
+  items = ADMIN_NAV_ITEMS,
+}: {
+  items?: NavItem[];
+}) {
   return (
     <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-60 shrink-0 overflow-y-auto border-r bg-sidebar px-3 py-4 md:block">
-      <AdminNavList />
+      <AdminNavList items={items} />
     </aside>
   );
 }
 
 /** Collapsible sidebar for mobile — lives inside the admin topbar. */
-export function AdminMobileNav() {
+export function AdminMobileNav({
+  items = ADMIN_NAV_ITEMS,
+}: {
+  items?: NavItem[];
+}) {
   return (
     <Sheet>
       <SheetTrigger
@@ -78,7 +92,7 @@ export function AdminMobileNav() {
             Admin section navigation
           </SheetDescription>
         </SheetHeader>
-        <AdminNavList />
+        <AdminNavList items={items} />
       </SheetContent>
     </Sheet>
   );

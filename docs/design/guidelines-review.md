@@ -66,3 +66,21 @@ without a note.
 - Manual keyboard walkthrough of dialog/sheet/menu is covered by unit
   tests (open, content exposed) rather than a visual pass — acceptable at
   placeholder fidelity; real flows get interactive checks in later phases.
+
+## Prompt 3 additions
+
+- `/login` is a real form now: `FormField` (label + `aria-describedby` +
+  `role="alert"`), `autocomplete="username"`/`"current-password"` (password
+  managers + axe), a labelled show/hide password toggle, submit with
+  `loading` state, and a distinct inline state for `EMAIL_NOT_VERIFIED`
+  (the resend action is Prompt 5). Generic credential errors — never
+  enumeration.
+- `403` surface at `/forbidden` (and the `forbidden()` interrupt) shares
+  the carded layout of `not-found`/`error` — explicit "you don't have
+  access", links back to role home + sign-out.
+- Role-filtered nav: the admin sidebar is rendered server-side from
+  `ADMIN_NAV` entries filtered by `roles` — a viewer never sees
+  `Import/Export`, `Users`, `Audit Logs` links at all (not just disabled).
+- Signed-out state: `SignOutButton` (client) posts to `signOut()`;
+  admin shell shows the signed-in name next to it; alumni shell shows
+  name/avatar + `verify_status` copy for pending/rejected alumni.

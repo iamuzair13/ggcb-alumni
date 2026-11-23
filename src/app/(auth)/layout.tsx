@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { Logo } from "@/components/shared/logo";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { GuestRedirect } from "@/components/auth/guest-redirect";
 
-// TODO(prompt-03): Prompt 3 adds real auth screens — these placeholders must
-// never be indexed (they are unprotected shells with no behaviour).
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+/**
+ * Auth (guest) pages. A signed-in user is bounced to their role home —
+ * the guard is inside Suspense because it reads the session (dynamic).
+ */
 export default function AuthLayout({ children }: LayoutProps<"/">) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
@@ -23,7 +27,11 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
         <CardHeader className="sr-only">
           <h1 className="sr-only">Account access</h1>
         </CardHeader>
-        <CardContent className="pt-2">{children}</CardContent>
+        <CardContent className="pt-2">
+          <Suspense>
+            <GuestRedirect>{children}</GuestRedirect>
+          </Suspense>
+        </CardContent>
       </Card>
       <p className="mt-6 text-center text-xs text-muted-foreground">
         Government Postgraduate College Burewala (GGCB)

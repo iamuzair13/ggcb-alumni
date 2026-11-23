@@ -1,18 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { FormField } from "@/components/ui/form-field";
+import { LoginForm } from "@/components/auth/login-form";
+import { sanitizeCallbackUrl } from "@/server/auth/callback-url";
 
 export const metadata: Metadata = { title: "Sign in" };
 
 /**
- * Static form skeleton only — submit behaviour is wired in a later phase
- * (Prompt 3, credentials login via NextAuth). No <form> element on purpose:
- * nothing may submit anywhere.
+ * Real credentials sign-in (Prompt 3). The form posts to a server action
+ * (NextAuth Credentials); callbackUrl is validated server-side so it can
+ * never be an open redirect. searchParams is read inside Suspense
+ * (Cache Components requires URL data to be streamed or blocking).
  */
-export default function LoginPage() {
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   return (
     <div className="space-y-5">
       <div className="space-y-1 text-center">
@@ -23,36 +28,9 @@ export default function LoginPage() {
           Alumni and staff sign in with their email and password.
         </p>
       </div>
-      <div className="space-y-4">
-        <FormField label="Email" required>
-          {(id, describedBy) => (
-            <Input
-              id={id}
-              type="email"
-              name="email"
-              autoComplete="email"
-              spellCheck={false}
-              placeholder="you@example.com…"
-              aria-describedby={describedBy}
-            />
-          )}
-        </FormField>
-        <FormField label="Password" required>
-          {(id, describedBy) => (
-            <Input
-              id={id}
-              type="password"
-              name="password"
-              autoComplete="current-password"
-              placeholder="Your password…"
-              aria-describedby={describedBy}
-            />
-          )}
-        </FormField>
-        <Button className="w-full" disabled>
-          Sign in
-        </Button>
-      </div>
+      <Suspense>
+        <LoginFormSuspense searchParams={searchParams} />
+      </Suspense>
       <div className="flex flex-col items-center gap-1.5 text-center text-sm">
         <Link
           href="/forgot-password"
@@ -72,4 +50,17 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+async function LoginFormSuspense({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const callbackUrl = sanitizeCallbackUrl(
+    Array.isArray(sp.callbackUrl) ? sp.callbackUrl[0] : sp.callbackUrl,
+    "",
+  );
+  return <LoginForm callbackUrl={callbackUrl} />;
 }

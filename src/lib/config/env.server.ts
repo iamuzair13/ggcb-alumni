@@ -28,20 +28,24 @@ const serverSchema = z.object({
   // Auth (Prompt 3)
   AUTH_SECRET: z.string().min(32),
   AUTH_URL: z.url(),
-  // Email (Prompt for email module)
-  SMTP_HOST: z.string().min(1),
-  SMTP_PORT: z.coerce.number().int().min(1).max(65535),
-  SMTP_USER: z.string().min(1),
-  SMTP_PASSWORD: z.string().min(1),
+  /** Auth.js needs this true on Vercel (non-localhost trusted host). */
+  AUTH_TRUST_HOST: z.literal("true").optional(),
+  // Email (Prompt 4) — optional until that phase implements the outbox;
+  // it flips these to required when SMTP is actually used.
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASSWORD: z.string().min(1).optional(),
   SMTP_SECURE: z.enum(["true", "false"]).optional(),
-  FROM_EMAIL: z.email(),
+  FROM_EMAIL: z.email().optional(),
   FROM_NAME: z.string().min(1).optional(),
   // Supabase Storage — server-side only, never exposed to the browser.
-  SUPABASE_URL: z.url(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  STORAGE_BUCKET_PRIVATE: z.string().min(1),
-  // Vercel Cron authentication for outbox/email drain routes.
-  CRON_SECRET: z.string().min(16),
+  // Optional until the upload phase implements it.
+  SUPABASE_URL: z.url().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  STORAGE_BUCKET_PRIVATE: z.string().min(1).optional(),
+  // Vercel Cron authentication for outbox/email drain routes (Prompt 4).
+  CRON_SECRET: z.string().min(16).optional(),
   // Dev-only query fan-out counter (context.md §7).
   DB_QUERY_STATS: z.enum(["true", "false"]).optional(),
   // Pool size for the runtime postgres.js client (default 3).

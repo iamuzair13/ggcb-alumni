@@ -46,6 +46,13 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   cacheComponents: true,
   partialPrefetching: true,
+  // Native modules must not be bundled — argon2 ships a N-API binding.
+  serverExternalPackages: ["argon2"],
+  experimental: {
+    // Enables forbidden()/unauthorized() — used by the route guards for an
+    // explicit 403 surface (docs/reports/phase-03.md records the choice).
+    authInterrupts: true,
+  },
   turbopack: {
     rules: {
       "*.css": {
@@ -55,7 +62,23 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      { source: "/(.*)", headers: securityHeaders },
+      // Authenticated areas must never be shared/cached between users —
+      // explicit private,no-store (belt + braces alongside proxy.ts).
+      {
+        source: "/admin/:path*",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        source: "/dashboard/:path*",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        source: "/api/auth/me",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+    ];
   },
 };
 
