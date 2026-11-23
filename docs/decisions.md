@@ -114,3 +114,12 @@ numbers (D4/D2 import phase).
 - **No local Postgres on the dev machine** (owner provisions Supabase
   directly) � `test:db` runs in CI's service container and locally via
   `docker compose`; specs skip cleanly when `TEST_DIRECT_URL` is unset.
+
+- **Supabase project exists** � ref `thgyfbnxonengnpfrmmk`
+  (`db.thgyfbnxonengnpfrmmk.supabase.co`), provisioned by the owner
+  2026-11-23. Its Postgres major version is whatever the project was
+  created with (check `select version();` � expected 15+; migrations were
+  written/tested for 17-compatible SQL that is also valid on 15/16).
+  Bootstrap path: paste root `schema.sql` in the SQL editor (it
+  pre-populates the ledger), or `pnpm db:migrate` with a filled
+  `DIRECT_URL` + `MIGRATE_CONFIRM=yes`.
