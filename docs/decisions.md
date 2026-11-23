@@ -140,3 +140,11 @@ numbers (D4/D2 import phase).
   = `postgresql://ggcb_app.thgyfbnxonengnpfrmmk:***@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres`
   (written to `.env.local`, verified `current_user=ggcb_app` + table
   reads). Document the `.<ref>` suffix in `docs/ops/db-runtime-role.md`.
+
+  **Password set out-of-band (owner request):** `password_hash` on the
+  seeded superadmin written directly via `DIRECT_URL` using argon2id
+  (`argon2@0.45.2` added � auth dep arriving early for the operational
+  password set; Prompt 3's verify path reuses it). `pnpm-workspace.yaml`
+  `allowBuilds` approves `argon2`/`esbuild` install scripts (pnpm 12
+  strict-builds mode; sharp/unrs-resolver remain denied). Prompt 3's
+  set-password flow can rotate it anytime.
