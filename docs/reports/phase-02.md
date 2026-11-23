@@ -26,19 +26,22 @@ superadmin seed). No auth, email delivery, or feature code.
 
 ## 2. Postgres version
 
-**17** (default per spec — the owner's Supabase major version was not
-recorded; flagged here and in `docs/ops/db-runtime-role.md`).
+**PostgreSQL 17.12** — confirmed on the provisioned Supabase project
+(`thgyfbnxonengnpfrmmk`, region ap-northeast-1) via `select version()` on
+2026-11-23. Matches the PG-17 assumption.
 
 ## 3. Migrations (order + SHA-256, first 16 hex)
 
-| File                           | sha256[:16]        | Contents                                                                                                    |
-| ------------------------------ | ------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `0001_extensions_and_helpers`  | `66900531207b9924` | citext + pgcrypto (portable extensions-schema placement), `set_updated_at()`                                |
-| `0002_identity_and_org`        | `a5cdefe76d2110e8` | `user_role`, `users`, `departments`                                                                         |
-| `0003_alumni`                  | `bbb5216755c4ee96` | 4 enums, `alumni` + `alumni_change_requests`, D4-labelled roll-number index                                 |
-| `0004_auth_support_and_outbox` | `48dd8baf2c6baba1` | `auth_token_type`, `outbox_status`, `auth_attempts`, `auth_tokens`, `email_outbox`, `purge_auth_attempts()` |
-| `0005_audit`                   | `e4949cb32e86ce60` | 3 append-only audit tables + `prevent_audit_mutation()` triggers                                            |
-| `0006_security_baseline`       | `c24afb2843ca143d` | RLS, revokes, default privileges, `ggcb_app` role + grants + policies                                       |
+| File                                      | sha256[:16]        | Contents                                                                                                               |
+| ----------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `0001_extensions_and_helpers`             | `66900531207b9924` | citext + pgcrypto (portable extensions-schema placement), `set_updated_at()`                                           |
+| `0002_identity_and_org`                   | `a5cdefe76d2110e8` | `user_role`, `users`, `departments`                                                                                    |
+| `0003_alumni`                             | `bbb5216755c4ee96` | 4 enums, `alumni` + `alumni_change_requests`, D4-labelled roll-number index                                            |
+| `0004_auth_support_and_outbox`            | `48dd8baf2c6baba1` | `auth_token_type`, `outbox_status`, `auth_attempts`, `auth_tokens`, `email_outbox`, `purge_auth_attempts()`            |
+| `0005_audit`                              | `e4949cb32e86ce60` | 3 append-only audit tables + `prevent_audit_mutation()` triggers                                                       |
+| `0006_security_baseline`                  | `c24afb2843ca143d` | RLS, revokes, default privileges, `ggcb_app` role + grants + policies                                                  |
+| `0007_owner_membership_in_ggcb_app`       | `de863d4e7f53338e` | `GRANT ggcb_app TO CURRENT_USER` — enables `SET ROLE` probes where the owner isn't a superuser (Supabase)              |
+| `0008_statement_level_audit_immutability` | `56391694358415d0` | Audit triggers → `FOR EACH STATEMENT` (row-level triggers silently no-op on empty tables — caught by `db:verify` live) |
 
 ## 4. Tables
 
@@ -93,7 +96,10 @@ Read-only-plus-`SET ROLE` checks, all implemented in
 `anon`/`authenticated` on tables/sequences/functions; `ggcb_app` holds
 **exactly** the §5.2 matrix; a policy exists per granted command; audit
 tables reject UPDATE/DELETE as owner AND as `ggcb_app`; no forbidden
-columns. Local run deferred to a real DB (§10); wired in CI and `test:db`.
+columns. **Ran against the real Supabase dev project on 2026-11-23:
+all checks passed** (after `0007` enabled the `SET ROLE` probe and `0008`
+hardened audit triggers — both found live by this verifier, see §10);
+also wired into CI and `test:db`.
 
 ## 8. Tests
 
@@ -115,26 +121,27 @@ documents the exact regeneration commands; CI/dev runs fill it in.
 
 ## 10. Could NOT verify offline (owner acceptance steps)
 
-1. **All SQL runs against real Postgres** — migrations, RLS, grants,
-   triggers, seed: exercised only in CI (`test:db` job) or a local
-   Postgres (`docker compose up -d db`, `pnpm db:migrate`,
-   `TEST_DIRECT_URL=postgresql://postgres:postgres@localhost:5432/ggcb_test
-pnpm test:db`).
-2. **Supabase pooler with a custom role** — plain `ggcb_app` username vs
-   required `ggcb_app.<project-ref>` format, and `search_path`/`citext`
-   through the pooler (exact steps in `docs/ops/db-runtime-role.md` §Pooler).
-3. **`citext` schema placement on Supabase** — migrations install into
-   `extensions` schema when it exists; `ggcb_app` and the runner set
-   `search_path = public, extensions` to cover both worlds. Confirm a
-   `citext` comparison works as `ggcb_app` via the pooler.
-4. **Supabase-side default privileges** — `0006` revokes Supabase's
-   bootstrap auto-grants to `anon`/`authenticated` for future objects
-   created by the `postgres` role; verify no Supabase-managed default
-   re-grants them (`SELECT * FROM pg_default_acl`).
+Updated 2026-11-23 — the owner's Supabase dev project went live during
+this phase, so most items moved from "unverified" to **verified on the
+real project** (`aws-1-ap-northeast-1.pooler.supabase.com`, PG 17.12):
 
-Owner: run migrations on a Supabase **dev** project
-(`DIRECT_URL` + `MIGRATE_CONFIRM=yes`), then the one-time
-`ALTER ROLE ggcb_app WITH LOGIN PASSWORD '…'`, then `pnpm db:verify`.
+| Item                                                          | Status                                                                                                                                                                               |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Migrations on real Postgres                                   | **Verified** — `schema.sql` applied via SQL editor; `db:migrate` applied `0007`/`0008` through the session pooler (advisory lock + transactions work through it)                     |
+| `db:verify` on the real project                               | **Verified** — all checks pass, including real `anon`/`authenticated` revocation, `ggcb_app` grant/policy matrix, audit immutability                                                 |
+| Direct connection host (`db.<ref>`)                           | **IPv6-only on free tier** — unreachable from the owner's network. `DIRECT_URL` therefore points at the **session pooler** (`:5432`), which preserves session state the runner needs |
+| `citext` on Supabase                                          | **Verified** — extensions live in the `extensions` schema; `search_path` resolution worked end-to-end                                                                                |
+| Supabase `postgres` role is NOT a superuser                   | **Verified + fixed** — `SET ROLE` required migration `0007` (`GRANT ggcb_app TO CURRENT_USER`)                                                                                       |
+| Row-level audit triggers no-op on empty tables                | **Verified + fixed** — `db:verify` caught it live; `0008` made triggers `FOR EACH STATEMENT`                                                                                         |
+| `test:db` full suite                                          | Still CI/local-Postgres only — the interlock refuses non-local targets **by design**                                                                                                 |
+| `DATABASE_URL` (transaction pooler, `ggcb_app` login)         | Still open — needs the one-time `ALTER ROLE ggcb_app WITH LOGIN PASSWORD '…'`; then confirm whether the pooler wants `ggcb_app` or `ggcb_app.<ref>` username                         |
+| Supabase re-granting `anon`/`authenticated` on future objects | Ongoing — `0006` revokes current defaults for the owner role; RLS stays the backstop. Re-run `db:verify` after any new table                                                         |
+
+**Owner steps completed:** project created, `schema.sql` applied,
+`0007`/`0008` applied via `pnpm db:migrate`, `pnpm db:verify` green.
+**Owner steps remaining:** `ALTER ROLE ggcb_app WITH LOGIN PASSWORD '…'`,
+fill `DATABASE_URL` (transaction pooler) in `.env.local`, first real app
+query in Prompt 3.
 
 ## 11. Dependencies
 

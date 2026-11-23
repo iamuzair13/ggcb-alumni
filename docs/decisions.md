@@ -123,3 +123,12 @@ numbers (D4/D2 import phase).
   Bootstrap path: paste root `schema.sql` in the SQL editor (it
   pre-populates the ledger), or `pnpm db:migrate` with a filled
   `DIRECT_URL` + `MIGRATE_CONFIRM=yes`.
+
+  **Postmortem (2026-11-23, same-day):** schema applied on the real
+  project � **PostgreSQL 17.12** confirmed. Direct host is IPv6-only on
+  the free tier, so `DIRECT_URL` uses the session pooler
+  (`aws-1-ap-northeast-1.pooler.supabase.com:5432`); transaction pooler
+  stays for `DATABASE_URL`. `db:verify` ran green after two real
+  findings: (a) Supabase `postgres` is not a superuser ? `0007`
+  role-membership grant for `SET ROLE` probes; (b) `FOR EACH ROW` audit
+  triggers no-op on empty tables ? `0008` statement-level triggers.

@@ -564,6 +564,44 @@ GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO ggcb_app;
 GRANT EXECUTE ON FUNCTION public.set_updated_at()            TO ggcb_app;
 GRANT EXECUTE ON FUNCTION public.purge_auth_attempts(interval) TO ggcb_app;
 
+-- ################## 0007_owner_membership_in_ggcb_app.sql ##################
+
+-- 0007_owner_membership_in_ggcb_app.sql
+-- Grant the migration owner membership in ggcb_app so `SET ROLE ggcb_app`
+-- works during `db:verify` and the test-suite's privilege probes.
+--
+-- Required on Supabase, where the `postgres` role is NOT a true superuser
+-- and cannot SET ROLE into arbitrary roles; harmless on plain Postgres,
+-- where a superuser needs no membership. Membership adds no privilege the
+-- owner did not already have — it only unlocks the impersonation probe.
+
+GRANT ggcb_app TO CURRENT_USER;
+
+-- ################## 0008_statement_level_audit_immutability.sql ##################
+
+-- 0008_statement_level_audit_immutability.sql
+-- Harden the audit-immutability triggers: FOR EACH ROW triggers fire once per
+-- affected row, so on an EMPTY table an UPDATE/DELETE silently no-ops past
+-- them (proved by db:verify on Supabase: the statements were "allowed").
+-- FOR EACH STATEMENT rejects the operation itself, independent of row count —
+-- the correct semantic for "append-only".
+
+DROP TRIGGER email_logs_immutable           ON email_logs;
+DROP TRIGGER admin_activity_logs_immutable  ON admin_activity_logs;
+DROP TRIGGER login_logs_immutable           ON login_logs;
+
+CREATE TRIGGER email_logs_immutable
+  BEFORE UPDATE OR DELETE ON email_logs
+  FOR EACH STATEMENT EXECUTE FUNCTION prevent_audit_mutation();
+
+CREATE TRIGGER admin_activity_logs_immutable
+  BEFORE UPDATE OR DELETE ON admin_activity_logs
+  FOR EACH STATEMENT EXECUTE FUNCTION prevent_audit_mutation();
+
+CREATE TRIGGER login_logs_immutable
+  BEFORE UPDATE OR DELETE ON login_logs
+  FOR EACH STATEMENT EXECUTE FUNCTION prevent_audit_mutation();
+
 -- Ledger rows for the migrations above (sha256, EOL-normalised — the
 -- same values `pnpm db:migrate` records).
 
@@ -573,6 +611,8 @@ INSERT INTO applied_migrations (id, name, checksum, execution_ms) VALUES
   (3, '0003_alumni.sql', 'bbb5216755c4ee969fbf9970eafcf228f5d6f72ed00878b3c6471237172da389', 0),
   (4, '0004_auth_support_and_outbox.sql', '48dd8baf2c6baba15d59d8472200c0a2e581c4c0c38362cc3fae12ceea89e788', 0),
   (5, '0005_audit.sql', 'e4949cb32e86ce60c5b5e8e1da94c1e3eb38c47d22627518d800329730464448', 0),
-  (6, '0006_security_baseline.sql', 'c24afb2843ca143d9bbd2638ce132c758025e74a913245d5e2ca4867e53d7f98', 0);
+  (6, '0006_security_baseline.sql', 'c24afb2843ca143d9bbd2638ce132c758025e74a913245d5e2ca4867e53d7f98', 0),
+  (7, '0007_owner_membership_in_ggcb_app.sql', 'de863d4e7f53338e7f5715558cbe9afd111f28a2fdd1ff2c5a50e042476a155a', 0),
+  (8, '0008_statement_level_audit_immutability.sql', '56391694358415d05e13224e6b39af51e06a79940c9a57a429cc1688676d661d', 0);
 
 COMMIT;

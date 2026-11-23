@@ -52,11 +52,13 @@ contents), `applied_at`, `execution_ms`.
 
 ## Current files
 
-| File                           | Contents                                                                                                                                                     |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `0001_extensions_and_helpers`  | citext + pgcrypto (portable schema placement), `set_updated_at()`                                                                                            |
-| `0002_identity_and_org`        | `user_role`, `users`, `departments`                                                                                                                          |
-| `0003_alumni`                  | `gender_type`, `verify_status`, `datasource_type`, `change_request_status`, `alumni`, `alumni_change_requests` — incl. the labelled **D4** roll-number index |
-| `0004_auth_support_and_outbox` | `auth_token_type`, `outbox_status`, `auth_attempts`, `auth_tokens`, `email_outbox`, `purge_auth_attempts()`                                                  |
-| `0005_audit`                   | `email_logs`, `admin_activity_logs`, `login_logs`, `prevent_audit_mutation()` + triggers                                                                     |
-| `0006_security_baseline`       | RLS on all tables, anon/authenticated + PUBLIC revokes, default privileges, `ggcb_app` role + grants + policies                                              |
+| File                                      | Contents                                                                                                                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `0001_extensions_and_helpers`             | citext + pgcrypto (portable schema placement), `set_updated_at()`                                                                                            |
+| `0002_identity_and_org`                   | `user_role`, `users`, `departments`                                                                                                                          |
+| `0003_alumni`                             | `gender_type`, `verify_status`, `datasource_type`, `change_request_status`, `alumni`, `alumni_change_requests` — incl. the labelled **D4** roll-number index |
+| `0004_auth_support_and_outbox`            | `auth_token_type`, `outbox_status`, `auth_attempts`, `auth_tokens`, `email_outbox`, `purge_auth_attempts()`                                                  |
+| `0005_audit`                              | `email_logs`, `admin_activity_logs`, `login_logs`, `prevent_audit_mutation()` + triggers                                                                     |
+| `0006_security_baseline`                  | RLS on all tables, anon/authenticated + PUBLIC revokes, default privileges, `ggcb_app` role + grants + policies                                              |
+| `0007_owner_membership_in_ggcb_app`       | `GRANT ggcb_app TO CURRENT_USER` � lets `db:verify`/tests `SET ROLE ggcb_app` where the owner isn't a superuser (Supabase)                                   |
+| `0008_statement_level_audit_immutability` | Rebuilds audit triggers `FOR EACH STATEMENT` � row-level triggers silently no-op on empty tables (proven by db:verify)                                       |
