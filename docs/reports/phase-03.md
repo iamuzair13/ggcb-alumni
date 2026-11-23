@@ -7,12 +7,13 @@ No schema changes; the Prompt-2 tables (`users`, `auth_attempts`,
 ## 1. Summary
 
 - Real credentials sign-in via **Auth.js v5 + argon2id against `users`**
-  — verified end-to-end against the live Supabase database (real session
-  issued for the seeded superadmin).
+  — verified end-to-end in a real browser against the live Supabase
+  database (login lands on `/admin` for the seeded superadmin).
 - **One server-side authorization layer** — `requireUser/Role/Staff/Alumni`
-  guards (authoritative), a central `ROUTE_POLICY` with a completeness
-  test, `defineRoute`/`defineAction` wrappers, a generated route×role
-  matrix, and `proxy.ts` as early routing only.
+  guards (authoritative, **outside Suspense** so wrong-role returns a real
+  HTTP **403** and anonymous a real **307**), a central `ROUTE_POLICY`
+  with a completeness test, `defineRoute`/`defineAction` wrappers, a
+  generated route×role matrix, and `proxy.ts` as early routing only.
 - **DB-backed rate limiting** — three HMAC'd buckets, rolling 15-minute
   windows, one multi-row insert per failure.
 - **Reusable hashed-token service** for Prompts 4/5 (create/consume/
@@ -77,7 +78,11 @@ NULL AND expires_at > now() RETURNING user_id` — concurrent double-
   `await connection()` required under Cache Components), `requireUser`
   (`callbackPath` sanitized), `requireRole`, `requireStaff`,
   `requireAlumni({verified})`, `requireUser({fresh})` (forces recheck),
-  `invalidateUserSessions` (`session_version+1`).
+  `roleForEmail` (post-login role lookup — see §9), `invalidateUserSessions`.
+- **Guards run OUTSIDE `<Suspense>`** in both protected layouts —
+  `redirect()`/`forbidden()` thrown inside a boundary can't set HTTP
+  statuses once the shell streams (see §9). Protected pages are fully
+  dynamic — correct, since they have no shareable static content.
 - `route-policy.ts` — central `ROUTE_POLICY` (longest-prefix match);
   completeness test scans `src/app` and **fails if a route has no policy**
   (fixture test proves detection).
@@ -125,8 +130,10 @@ SecLists `10k-most-common.txt` — MIT, provenance + regen steps in
   safe `callbackUrl` validated twice (client hidden field + `sanitize`).
 - `GuestRedirect` — signed-in visitors bounced to role home (streamed
   redirect under Cache Components).
-- Admin shell: `requireStaff` + role-filtered `ADMIN_NAV` (viewer sees 5
-  links, not 8), signed-in name, `SignOutButton`.
+- Admin shell: `requireStaff` + role-filtered nav (viewer sees 5 links,
+  not 8) — the server passes serializable `hrefs` and client components
+  resolve items/icons from `ADMIN_NAV_ITEMS` (component references
+  cannot cross the RSC→client boundary), signed-in name, `SignOutButton`.
 - Alumni shell: `requireAlumni` + `verify_status` copy; superadmin-locked
   pages (`users`, `import-export`, `audit-logs`) guard with
   `requireRole(["superadmin"])`.
@@ -148,6 +155,16 @@ SecLists `10k-most-common.txt` — MIT, provenance + regen steps in
 - Guest pages (`/login` etc.) keep `GuestRedirect` inside Suspense —
   a signed-in user hitting a guest page is a UX bounce, not a security
   boundary, and the streamed redirect is correct there.
+- **Server components can't return component references to client
+  components** — the role-filtered nav initially passed `NavItem[]`
+  (with `icon` functions) from the server shell to client nav
+  components → RSC serialization error (500). Fixed by passing `hrefs`
+  and resolving items client-side.
+- **Post-login role lookup**: `signIn()` sets the cookie on the
+  _response_, so `getSession()` in the same server action can't see the
+  just-issued session → `roleForEmail()` re-reads the role (one indexed
+  query) to pick the correct role home. Was caught live: superadmin
+  landed on `/dashboard` (which then correctly 403'd).
 - `searchParams` awaits must live inside Suspense too.
 
 ## 10. Results
@@ -169,14 +186,17 @@ cleanly without it — `test:db` reported `44 skipped` locally.
 
 ## 11. Real-world verification performed locally
 
+- **Real browser login (Playwright, live Supabase):** `/login` → the
+  real seeded superadmin signs in → lands on **`/admin`** (role home,
+  not `/dashboard`); `/admin` + `/admin/users` → 200 with the name
+  rendered; `/dashboard` as superadmin → **HTTP 403** + the explicit
+  Forbidden page; anonymous → 307 `/login?callbackUrl=…`.
 - `pnpm build` + `next start` → `POST /api/auth/callback/credentials`
   for the real seeded superadmin → **302 + `__Host-authjs.session-token`
   (Secure, HttpOnly, SameSite=Lax)**; `/api/auth/session` returned
   `{id, name:"Uzair Shafqat", role:"superadmin", sessionVersion:1}`;
   `/api/auth/me` → `{id,name,role}` + `Cache-Control: private,no-store`;
   wrong password → `code=invalid_credentials` (generic).
-- `GET /admin` with session → 200 (name rendered); anonymous → 307
-  `/login?callbackUrl=/admin`.
 - Cookie-less vs cookie-bearing paths both verified (proxy 307 vs
   streamed redirect).
 
@@ -188,8 +208,13 @@ cleanly without it — `test:db` reported `44 skipped` locally.
 - **Later-phase env vars relaxed to optional** — `SMTP_*`, `SUPABASE_*`,
   `CRON_SECRET` were required in Phase 2 but unused; production start
   proved that was premature. Each later prompt flips its own to required.
-- Client-side guest-redirect (not 307) is inherent to PPR streaming —
-  documented in the matrix, behaviour is correct.
+- **RSC serialization boundary** — server→client props must be plain
+  data; `icon` component references in the nav caused a real 500 (see
+  §9). Rule: pass ids/hrefs, resolve components on the client.
+- **Single dev-server lock** — Next 16 allows one `next dev` per
+  project; `playwright.config.ts` accepts `E2E_BASE_URL` so a local run
+  can reuse an already-running server (`reuseExistingServer` was already
+  set — CI unaffected).
 - `AUTH_SECRET` rotation invalidates every session + all HMAC'd attempt
   keys — documented in the runbook.
 
@@ -217,8 +242,11 @@ Reuse as-is: `defineAction`/`defineRoute` (authorize→validate),
 `createAuthToken`/`consumeAuthToken` (password-reset + email-verify —
 tokens already have the right expiry constants), `writeLoginLog` /
 `admin_activity_logs` helper in `audit.ts` (the `after()`-ready
-structured writer), `invalidateUserSessions`, the route policy (add
-entries → completeness test enforces guards), `RateLimitStore` for
-verify/resend endpoints, `assertSameOrigin` for mutation actions, and
-`docs/ops/auth-runbook.md`. Flip `SMTP_*`, `FROM_*`, `CRON_SECRET` to
+structured writer), `invalidateUserSessions`, `roleForEmail`, the route
+policy (add entries → completeness test enforces guards), `RateLimitStore`
+for verify/resend endpoints, `assertSameOrigin` for mutation actions,
+`E2E_BASE_URL` to point e2e at a running server, and
+`docs/ops/auth-runbook.md`. Two rules to keep from §9: auth guards run
+OUTSIDE `<Suspense>` (real statuses); server→client props stay serializable
+(hrefs/ids, not components). Flip `SMTP_*`, `FROM_*`, `CRON_SECRET` to
 required in `env.server.ts` when the outbox is implemented.
