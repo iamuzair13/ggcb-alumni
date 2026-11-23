@@ -8,9 +8,15 @@ superadmin seed). No auth, email delivery, or feature code.
 
 - Custom forward-only migration system: `scripts/lib/runner.ts` + CLI
   (`db:migrate`, `db:status`, `db:new`, `db:verify`, `db:seed:superadmin`,
-  `db:explain`). Ledger `applied_migrations` is runner-bootstrapped.
-- 6 SQL files create the 11 required tables (and nothing else), 7 native
-  enums, 2 helper functions, 3 immutability triggers.
+  `db:explain`, `db:schema`). Ledger `applied_migrations` is
+  runner-bootstrapped. Root `schema.sql` is a generated one-time
+  bootstrap (all migrations verbatim + pre-filled ledger) for the
+  Supabase SQL editor — it was used for the initial apply.
+- **8 SQL files** create the 11 required tables (and nothing else), 7
+  native enums, 2 helper functions, 3 immutability triggers. `0007`/`0008`
+  were added after live verification on the real Supabase project
+  (see §10) — **all 8 applied, `db:verify` green, `db:status` shows 0
+  pending on the provisioned project.**
 - Security baseline (`0006`): RLS on every public table; zero privileges
   for `anon`/`authenticated`/`PUBLIC`; closed default privileges for future
   objects; `ggcb_app` NOLOGIN/NOBYPASSRLS runtime role with least-privilege
@@ -19,7 +25,9 @@ superadmin seed). No auth, email delivery, or feature code.
   `prepare:false`, `withTransaction`, `closeDb`, dev-only
   `DB_QUERY_STATS`/`AsyncLocalStorage` counter, hand-written row types +
   enum constants that a drift test pins to `pg_enum`.
-- Idempotent, password-less, audited superadmin seed.
+- Idempotent superadmin seed — **ran on the real project**: the owner
+  identity exists (`password_hash` later set out-of-band to an argon2id
+  value at the owner's request; audited via `admin_activity_logs`).
 - Real-Postgres suite (`vitest.db.config.ts`, 32 specs across 7 files) +
   DB-free interlock proof in the unit suite. Skips cleanly without
   `TEST_DIRECT_URL`; CI runs it against a `postgres:17` service.
@@ -137,17 +145,22 @@ real project** (`aws-1-ap-northeast-1.pooler.supabase.com`, PG 17.12):
 | `DATABASE_URL` (transaction pooler, `ggcb_app` login)         | **Verified** — `ggcb_app` password set via `ALTER ROLE`; Supavisor requires `ggcb_app.<ref>` username (plain refused, `ENOIDENTIFIER`); `:6543` login + table read confirmed, written to `.env.local` |
 | Supabase re-granting `anon`/`authenticated` on future objects | Ongoing — `0006` revokes current defaults for the owner role; RLS stays the backstop. Re-run `db:verify` after any new table                                                                          |
 
-**Owner steps completed:** project created, `schema.sql` applied,
-`0007`/`0008` applied via `pnpm db:migrate`, `pnpm db:verify` green.
-**Owner steps remaining:** `ALTER ROLE ggcb_app WITH LOGIN PASSWORD '…'`,
-fill `DATABASE_URL` (transaction pooler) in `.env.local`, first real app
-query in Prompt 3.
+**Owner steps — all completed (2026-11-23):** project created, `schema.sql`
+applied, `0007`/`0008` applied via `pnpm db:migrate`, `pnpm db:verify`
+green, `ggcb_app` password set (`ALTER ROLE … LOGIN`), `DATABASE_URL`
+written to `.env.local` and verified (`current_user=ggcb_app` via
+transaction pooler `:6543`), superadmin seeded
+(`uzair.works3@gmail.com`) and given a working argon2id credential.
 
 ## 11. Dependencies
 
 Added: `postgres@4.1.1` (runtime — the locked driver), `tsx@4.23.15` (dev —
-script runner; alternative was precompiling scripts to JS). Nothing else;
-no ORM, no hashing/auth/email/Supabase-client/Excel packages.
+script runner; alternative was precompiling scripts to JS),
+`argon2@0.45.2` (runtime — spec'd argon2id hasher, arrived one phase
+early for the out-of-band superadmin password set; Prompt 3's verify
+path reuses it). `pnpm-workspace.yaml` `allowBuilds` approves
+`argon2`/`esbuild` install scripts (pnpm 12 strict-builds).
+Nothing else; no ORM, no email/Supabase-client/Excel packages.
 
 ## 12. Decisions & open-decision defaults
 
@@ -155,7 +168,7 @@ In `docs/decisions.md` §Prompt 2: custom runner, runner-bootstrapped
 ledger, `session_version`, `ON DELETE` map (SET NULL alumni.user_id /
 actor refs, CASCADE only auth_tokens, RESTRICT elsewhere), gender values,
 one-pending-CR unique index, `email_logs.status` as text, forbidden-column
-enforcement, test interlock, PG 17 assumption.
+enforcement, test interlock, PG 17 assumption (**confirmed: 17.12**).
 
 D3 (no seed departments) — honoured: zero rows seeded. D4 (unique
 normalised roll number) — isolated to the single labelled
@@ -163,10 +176,13 @@ normalised roll number) — isolated to the single labelled
 
 ## 13. Issues, risks, deviations
 
-- **No DB tests ran locally** — no Postgres on this machine by owner
-  decision; specs are written to spec and skip cleanly (`describe.skipIf`),
-  so `pnpm test`/`check` stay green. CI executes them. Risk: SQL typos
-  surface on first real run — mitigate by running CI on the PR.
+- **The full `test:db` spec suite has not executed** — specs are written
+  and skip cleanly without `TEST_DIRECT_URL`; CI runs them against
+  `postgres:17`. However the schema itself was proven on the real project:
+  `db:migrate` + `db:verify` exercised every migration, all RLS/grant/
+  policy assertions, and both audit probes on Supabase PG 17.12 — and the
+  two defects they surfaced (`0007`, `0008`) were fixed and re-verified
+  the same day.
 - `email_outbox` carries `created_at` only (spec's explicit column list),
   despite being mutable — deliberate spec-faithful choice.
 - One transient note: `pg_advisory_lock` is session-scoped; the runner's
@@ -174,10 +190,17 @@ normalised roll number) — isolated to the single labelled
 
 ## 14. Handoff to Prompt 3
 
-Reuse, don't rebuild: `users` (`password_hash` null-friendly,
+Reuse, don't rebuild: `users` (`password_hash` argon2id-ready,
 `session_version`), `auth_attempts` (+ `purge_auth_attempts()`),
 `auth_tokens`, `login_logs`, `withTransaction()`, the `ggcb_app`
-credentials pattern, `seedSuperadmin()`, `runVerify()` (CI gate),
-`DB_ENUMS` + the pg_enum drift test. `src/server/auth/index.ts` is still
-the placeholder — Prompt 3 replaces it. Remember: `ggcb_app` has NO DELETE
-on `users`/`alumni` — deactivation is `is_active=false`.
+credentials pattern (`DATABASE_URL` verified working through the
+transaction pooler with the `ggcb_app.<ref>` username format),
+`seedSuperadmin()`, `runVerify()` (CI gate), `argon2` (already installed
+
+- hashing correctly), `DB_ENUMS` + the pg_enum drift test.
+  `src/server/auth/index.ts` is still the placeholder — Prompt 3 replaces
+  it. The superadmin already has a working credential; Prompt 3's login
+  flow can verify it immediately. Remember: `ggcb_app` has NO DELETE on
+  `users`/`alumni` — deactivation is `is_active=false`; and session-bound
+  operations (SET ROLE, advisory locks) need the **session** pooler, while
+  the runtime client correctly uses the transaction pooler.
