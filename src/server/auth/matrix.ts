@@ -12,6 +12,7 @@ import type { Role } from "@/lib/constants/roles";
 export const PERSONAS = [
   "anonymous",
   "alumni-under_approval",
+  "alumni-rejected",
   "alumni-verified",
   "viewer",
   "admin",
@@ -22,6 +23,7 @@ export type Persona = (typeof PERSONAS)[number];
 const PERSONA_ROLE: Record<Persona, Role | null> = {
   anonymous: null,
   "alumni-under_approval": "alumni",
+  "alumni-rejected": "alumni",
   "alumni-verified": "alumni",
   viewer: "viewer",
   admin: "admin",
@@ -31,11 +33,12 @@ const PERSONA_ROLE: Record<Persona, Role | null> = {
 /** Expected outcome as a compact matrix cell (page expectations). */
 export function expectedOutcome(
   pattern: string,
-  kind: "page" | "api",
+  kind: "page" | "api" | "cron",
   persona: Persona,
 ): string {
   const policy = ROUTE_POLICY.find((p) => p.pattern === pattern);
   if (!policy) return "NO POLICY";
+  if (kind === "cron") return "401"; // bearer-secret only — no persona ever
   if (policy.devOnly) return "404 (prod)";
   const role = PERSONA_ROLE[persona];
 
@@ -85,6 +88,8 @@ export function renderMatrixMarkdown(): string {
     "  never a 404 for wrong-role)",
     "- `→ /admin` / `→ /dashboard` — signed-in users bounced off guest pages",
     "- `404 (prod)` — dev-only surface, notFound() in production builds",
+    "- `401` (cron row) — bearer-secret auth; no session, cookie, or role",
+    "  ever authorizes it, so every persona gets 401 without the secret",
     "",
     header,
     sep,

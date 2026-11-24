@@ -11,7 +11,12 @@ import type { Role } from "@/lib/constants/roles";
 export interface RoutePolicyEntry {
   /** Path prefix; `/` matches everything (used only for the root page). */
   pattern: string;
-  kind: "page" | "api";
+  /**
+   * `page` | `api` | `cron`. A `cron` entry covers an api route.ts whose
+   * handler enforces bearer-secret auth itself — no session/cookie/role
+   * ever authorizes it, so the matrix shows 401 for EVERY persona.
+   */
+  kind: "page" | "api" | "cron";
   /** `public` = no auth required; `any` = any signed-in user; else the role set. */
   roles: Role[] | "public" | "any";
   /** When true, alumni must also be alumni.verify_status='verified'. */
@@ -40,13 +45,23 @@ export const ROUTE_POLICY: RoutePolicyEntry[] = [
   { pattern: "/api/health", kind: "api", roles: "public" },
   { pattern: "/api/auth/me", kind: "api", roles: "any" },
   { pattern: "/api/auth", kind: "api", roles: "public" }, // Auth.js endpoints
+  // Vercel Cron bearer-secret route — session/role auth NEVER applies;
+  // the handler is fail-closed (401 for every persona, spec §4.7).
+  { pattern: "/api/cron/email-outbox", kind: "cron", roles: "public" },
   // ── alumni ────────────────────────────────────────────────────────────
   { pattern: "/dashboard", kind: "page", roles: ["alumni"] },
   // ── staff ─────────────────────────────────────────────────────────────
+  // Enumerated per section (context.md §10): viewer read-only on the five
+  // operational sections; import/export + audit logs are superadmin+admin;
+  // user management is superadmin-only.
   { pattern: "/admin/users", kind: "page", roles: ["superadmin"] },
   { pattern: "/admin/import-export", kind: "page", roles: STAFF_OPS },
   { pattern: "/admin/audit-logs", kind: "page", roles: STAFF_OPS },
-  { pattern: "/admin", kind: "page", roles: STAFF }, // dashboard, alumni, departments, content, analytics
+  { pattern: "/admin/alumni", kind: "page", roles: STAFF },
+  { pattern: "/admin/departments", kind: "page", roles: STAFF },
+  { pattern: "/admin/content", kind: "page", roles: STAFF },
+  { pattern: "/admin/analytics", kind: "page", roles: STAFF },
+  { pattern: "/admin", kind: "page", roles: STAFF }, // admin dashboard
 ];
 
 /** Exact match, or prefix match on a segment boundary. */

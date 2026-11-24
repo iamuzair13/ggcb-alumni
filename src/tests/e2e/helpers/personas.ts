@@ -18,6 +18,7 @@ export const E2E_EMAILS = {
   viewer: "e2e.viewer@test.local",
   alumniVerified: "e2e.av@test.local",
   alumniPending: "e2e.ap@test.local",
+  alumniRejected: "e2e.ar@test.local",
 } as const;
 
 export const hasE2eAuthDb = (() => {
@@ -69,6 +70,12 @@ export async function provisionE2ePersonas(): Promise<void> {
         name: "E2E Pending Alumni",
         role: "alumni",
         vs: "under_approval",
+      },
+      {
+        email: E2E_EMAILS.alumniRejected,
+        name: "E2E Rejected Alumni",
+        role: "alumni",
+        vs: "rejected",
       },
     ] as const;
     for (const s of specs) {

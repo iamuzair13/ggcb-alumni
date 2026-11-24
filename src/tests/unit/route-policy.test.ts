@@ -44,7 +44,9 @@ describe("route-policy completeness", () => {
     (path, kind) => {
       const p = policyFor(path);
       expect(p, `no ROUTE_POLICY entry covers ${path}`).toBeDefined();
-      expect(p!.kind).toBe(kind);
+      // `cron` is an api kind with bearer-secret auth (spec §4.7).
+      const expected = p!.kind === "cron" ? "api" : p!.kind;
+      expect(expected).toBe(kind);
     },
   );
 

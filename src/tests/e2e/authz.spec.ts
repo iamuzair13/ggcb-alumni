@@ -115,6 +115,7 @@ test.describe("persona matrix (requires local test DB)", () => {
       { email: E2E_EMAILS.viewer, role: "viewer" },
       { email: E2E_EMAILS.alumniVerified, role: "alumni" },
       { email: E2E_EMAILS.alumniPending, role: "alumni" },
+      { email: E2E_EMAILS.alumniRejected, role: "alumni" },
     ];
     const pageRoutes = ROUTE_POLICY.filter(
       (p) => p.kind === "page" && !p.devOnly,
