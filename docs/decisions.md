@@ -193,3 +193,46 @@ private, no-store`; it never _grants_ access. Every guarded
   vars to required.
 - **`pnpm authz:matrix`** generates `docs/security/authz-matrix.md`; a
   unit test fails when the file drifts from the route policy.
+
+## Prompt 4 � Transactional email (phase-04-email)
+
+- **`nodemailer@7.0.13` (+ `@types/nodemailer@7.0.12`)** � the ONLY new
+  runtime dependency this phase (spec allows exactly this). Locked �3:
+  SMTP via nodemailer, outbox pattern, server-side templates, no provider
+  SDKs. No queue/templating framework (no BullMQ/MJML/react-email).
+- **EMAIL_MODE `off` is the default** � the system is fully functional
+  with no provider; `log` is dev/test-only (env validation refuses it in
+  production); `smtp` requires the full SMTP_* + FROM_* set (conditional
+  requirements live in `env.server.ts` superRefine).
+- **Payloads encrypted at rest** � AES-256-GCM envelope in the existing
+  jsonb column, key = HKDF(AUTH_SECRET, "email-outbox-payload"). Redacted
+  (NULL) on send. AUTH_SECRET rotation makes pending rows undecryptable ?
+  permanent failure with a scrubbed error (documented, accepted risk).
+- **"Dead" is a predicate, not an enum** � `failed AND attempts >=
+max_attempts`; no `outbox_status` value added (spec �4.2).
+- **Idempotency via unique partial index** on `idempotency_key` +
+  `ON CONFLICT � WHERE IS NOT NULL DO NOTHING` � exactly-once enqueue for
+  retried business ops.
+- **Throttle is silent and at insert time** � a CTE counts recent
+  recipient+template rows inside the same INSERT (=2 queries total,
+  usually 1); callers only learn {queued|duplicate|throttled}, never a
+  user-facing signal.
+- **Worker claims with FOR UPDATE SKIP LOCKED** � multiple workers need
+  no coordination; fresh transporter per run (serverless-safe), strict
+  timeouts, TLS =1.2, requireTLS when secure=false; Message-ID = outbox id
+  @ FROM domain (provider-level dedupe for free).
+- **Cron route is a separate policy kind `cron`** � fail-closed bearer
+  secret with timingSafeEqual; sessions/roles NEVER authorize it; matrix
+  shows 401 for every persona. No vercel.json schedule committed (Hobby
+  allows only daily crons � example + pg_cron alternative documented).
+- **Transient vs permanent by RFC 5321** � 4xx/timeouts retry with
+  backoff+jitter (�1m,5m,15m,1h,6h); 5xx/recipient + EAUTH/render/decrypt
+  die immediately. `last_error` is scrubbed (credentials, query-string
+  URLs, token-like blobs) and capped at 500.
+- **Audit metadata is sanitized** � secret-ish keys dropped recursively,
+  ~4 KB cap, non-plain values rejected; two modes: in-transaction (fails
+  the change) vs best-effort via after() (docs/security/audit-actions.md).
+- **Admin sections enumerated in the route policy** (�3.2) + the
+  `alumni-rejected` persona added � the matrix lists every section.
+- **Mailpit** for local/CI SMTP (docker-compose + CI service container) �
+  infrastructure, not an app dependency.

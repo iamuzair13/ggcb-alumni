@@ -13,7 +13,7 @@ const REQUIRED_ENV: Record<string, string> = {
   SUPABASE_URL: "https://xyz.supabase.co",
   SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
   STORAGE_BUCKET_PRIVATE: "ggcb-private",
-  CRON_SECRET: "c".repeat(16),
+  CRON_SECRET: "c".repeat(40),
 };
 
 function stubEnv(overrides: Record<string, string | undefined> = {}) {
