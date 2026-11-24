@@ -62,5 +62,7 @@ async function LoginFormSuspense({
     Array.isArray(sp.callbackUrl) ? sp.callbackUrl[0] : sp.callbackUrl,
     "",
   );
-  return <LoginForm callbackUrl={callbackUrl} />;
+  const notice =
+    sp.notice === "password-changed" ? "password-changed" : undefined;
+  return <LoginForm callbackUrl={callbackUrl} notice={notice} />;
 }

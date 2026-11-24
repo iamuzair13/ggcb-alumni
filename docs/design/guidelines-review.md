@@ -84,3 +84,42 @@ without a note.
 - Signed-out state: `SignOutButton` (client) posts to `signOut()`;
   admin shell shows the signed-in name next to it; alumni shell shows
   name/avatar + `verify_status` copy for pending/rejected alumni.
+
+## Prompt 5 additions
+
+- **GET never consumes.** Token pages (`/verify-email`, `/reset-password`,
+  `/set-password`) render a confirm/action form only � the token is spent
+  by the POST server action, so mail-scanner prefetch can never burn it
+  (e2e asserts zero POSTs on load + `no-store`/`no-referrer` headers;
+  `TokenStrip` removes `?token=` from the visible URL after mount).
+- **New composites** (`components/shared/`): `InlineAlert` (four variants,
+  `role="alert"` only for destructive), `PasswordField` (labelled
+  show/hide toggle + live policy hint, never clears on error),
+  `ConfirmDialog` (names the object + explicit verb � "Deactivate Sample
+  Staff A", never "OK"), `FormDialog` (pending + server `fieldErrors`
+  routed back to fields), `RowActions` (labelled "Actions for X" menu;
+  disabled items stay visible WITH the reason), `UserStatusBadge`
+  (icon + text + colour � never colour alone), `ListToolbar` (URL-bound
+  search/filters/chips), `Pager` ("Showing x�y of n").
+- **Base UI Select gotcha found via screenshots:** `Select.Value` resolves
+  the item label only while the popup is mounted, so a closed trigger
+  displayed the raw `__any__` sentinel. Triggers now render an explicitly
+  computed label span � worth remembering for every future Select with
+  sentinel values.
+- **Viewer is genuinely read-only:** `/admin/users` and
+  `/admin/departments` render no write controls at all for viewers (the
+  server page decides � not just disabled buttons), and the actions
+  return `forbidden` server-side anyway.
+- **Mobile tables:** the staff/department lists reuse `DataTable`'s
+  stacked `dl` card rendering under `sm` (verified at 360px in
+  `design-review/phase-05/`), keeping the row-action trigger reachable.
+- **Keyboard:** Escape closes `RowActions` menu (component test); dialog
+  focus management is Base UI AlertDialog/Dialog; destructive actions
+  always route through `ConfirmDialog` so the confirm button is
+  explicitly labelled with the object name.
+- **Previews:** `/design/screens/{account,users,departments}` render
+  every state (idle/loading/success/error/empty/read-only) with fixtures
+  in dev; `notFound()` in production. axe covers them in dev.
+- **`useSearchParams` discipline:** `ListToolbar` and the login form run
+  inside Suspense boundaries; token pages read `searchParams` inside a
+  nested `<Suspense>` (Cache Components requirement � build verified).

@@ -117,6 +117,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ToastDemo } from "./toast-demo";
+import { PasswordFieldDemo, RowActionsDemo } from "./patterns-demo";
+import { InlineAlert } from "@/components/shared/inline-alert";
+import { UserStatusBadge } from "@/components/shared/user-status-badge";
 
 export const metadata: Metadata = {
   title: "Design system",
@@ -774,6 +777,65 @@ export default function DesignPage() {
             <Search className="size-4" aria-hidden="true" />
             <ChevronRight className="size-4" aria-hidden="true" />
           </div>
+        </Section>
+
+        {/* Phase 5 composite patterns */}
+        <Section id="patterns" title="Patterns (Phase 5)">
+          <div className="grid max-w-2xl gap-4">
+            <InlineAlert variant="info" title="InlineAlert — info">
+              Non-blocking context that stays on screen until the user acts.
+            </InlineAlert>
+            <InlineAlert variant="success" title="InlineAlert — success">
+              Confirmation that needs to persist (not a toast).
+            </InlineAlert>
+            <InlineAlert variant="warning" title="InlineAlert — warning">
+              Degraded capability (for example email not configured).
+            </InlineAlert>
+            <InlineAlert variant="destructive" title="InlineAlert — error">
+              Something went wrong — say what happened and how to recover.
+            </InlineAlert>
+          </div>
+
+          <div>
+            <h3 className="mb-2 text-sm font-medium">
+              PasswordField — toggle + live policy hint
+            </h3>
+            <PasswordFieldDemo />
+          </div>
+
+          <div>
+            <h3 className="mb-2 text-sm font-medium">
+              UserStatusBadge — staff user status chips
+            </h3>
+            <Demo>
+              <UserStatusBadge status="active" />
+              <UserStatusBadge status="invited" />
+              <UserStatusBadge status="inactive" />
+            </Demo>
+          </div>
+
+          <div>
+            <h3 className="mb-2 text-sm font-medium">
+              RowActions + ConfirmDialog — labelled menu, explicit verbs
+            </h3>
+            <RowActionsDemo />
+          </div>
+
+          <p className="max-w-prose text-sm text-muted-foreground">
+            List-page composites live in{" "}
+            <code className="font-mono text-xs">components/shared</code>:{" "}
+            <code className="font-mono text-xs">ListToolbar</code> (URL-bound
+            search + filters + chips),{" "}
+            <code className="font-mono text-xs">Pager</code> (&quot;Showing x–y
+            of n&quot; + prev/next links),{" "}
+            <code className="font-mono text-xs">FormDialog</code> (quick
+            create/edit with server field errors). Their live demos are the
+            screens themselves:{" "}
+            <code className="font-mono text-xs">/admin/users</code>,{" "}
+            <code className="font-mono text-xs">/admin/departments</code>, and
+            the fixture previews under{" "}
+            <code className="font-mono text-xs">/design/screens/*</code>.
+          </p>
         </Section>
       </main>
     </TooltipProvider>

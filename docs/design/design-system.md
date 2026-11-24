@@ -184,3 +184,44 @@ every interactive element, full keyboard operability, ≥ 44 px touch targets on
 coarse pointers, error text adjacent to the field, `aria-live` for toasts and
 async validation, correct dialog/sheet semantics via Base UI primitives,
 skip link on every shell.
+
+## 11. Composite patterns (Phase 5)
+
+These are app-level patterns built FROM the primitives above � they are the
+only way lists, dialogs, and forms may be assembled (blueprint �2).
+
+- **`ListToolbar`** (`components/shared/list-toolbar.tsx`) � search box +
+  select filters + active-filter chips + clear-all. Writes all state into
+  URL search params (`q`, filter keys, resets `page`) so lists are
+  shareable and the back button works. Server does the filtering.
+- **`Pager`** (`components/shared/pager.tsx`) � "Showing x�y of n" +
+  previous/next links that carry the full param set. Server component.
+- **`RowActions`** (`components/shared/row-actions.tsx`) � the labelled
+  "More actions" dropdown for table rows. Disabled items stay visible with
+  a reason (`disabledReason`) so safety rules are legible.
+- **`ConfirmDialog`** (`components/shared/confirm-dialog.tsx`) �
+  destructive/sensitive confirmations. The object is named and the verb is
+  explicit ("Deactivate Sample Staff A", never "OK").
+- **`FormDialog`** (`components/shared/form-dialog.tsx`) � quick
+  create/edit dialogs (= 6 fields): pending state, generic error alert,
+  server `fieldErrors` routed back to fields, closes + toasts on success.
+- **`PasswordField`** (`components/shared/password-field.tsx`) �
+  show/hide toggle (accessible name + `aria-pressed`), `autocomplete`,
+  live policy hint (10+ characters, match state). Never clears on error.
+- **`InlineAlert`** (`components/shared/inline-alert.tsx`) � persistent
+  notices in four variants (`info`/`success`/`warning`/`destructive`);
+  `role="alert"` for destructive, `role="status"` otherwise.
+- **`UserStatusBadge`** (`components/shared/user-status-badge.tsx`) �
+  staff-user status chips (Active/Invited/Inactive): icon + text + colour,
+  never colour alone.
+- **`EmptyState`** (`components/shared/empty-state.tsx`, existing) �
+  title (what is missing) + one sentence (what to do) + optional action.
+- **`list-params`** (`src/lib/list-params.ts`) � pure URL-param
+  parse/build helpers shared by list pages and `Pager`.
+
+Result types shared across the server/client boundary live in
+`src/lib/result.ts` (`ActionResult`, `ServiceResult`, `ConsumeResult`,
+`NeutralResult`, `UserStatus`) � plain data, importable anywhere.
+
+Screen previews with fixtures live under `/design/screens/*` (dev-only,
+404 in production): `account`, `users`, `departments`.

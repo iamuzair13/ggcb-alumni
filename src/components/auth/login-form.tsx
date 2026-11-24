@@ -12,18 +12,34 @@ import { Eye, EyeOff, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
+import { InlineAlert } from "@/components/shared/inline-alert";
+import { ResendVerification } from "@/components/auth/resend-verification";
 import { loginAction, type LoginFormState } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 
 const initial: LoginFormState = {};
 
-export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
+export function LoginForm({
+  callbackUrl,
+  notice,
+}: {
+  callbackUrl: string;
+  notice?: "password-changed";
+}) {
   const [state, action, pending] = useActionState(loginAction, initial);
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const unverified = state.code === "email_not_verified";
 
   return (
     <form action={action} className="space-y-4" noValidate>
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
+
+      {notice === "password-changed" && !state.error ? (
+        <InlineAlert variant="success" title="Password updated">
+          Sign in with your new password.
+        </InlineAlert>
+      ) : null}
 
       {state.error ? (
         <div
@@ -36,7 +52,10 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
           )}
         >
           <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <p>{state.error}</p>
+          <div className="min-w-0">
+            <p>{state.error}</p>
+            {unverified ? <ResendVerification email={email} /> : null}
+          </div>
         </div>
       ) : null}
 
@@ -50,6 +69,8 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
             inputMode="email"
             spellCheck={false}
             required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com…"
             aria-describedby={describedBy}
           />
