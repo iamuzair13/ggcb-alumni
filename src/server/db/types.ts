@@ -123,6 +123,8 @@ export interface EmailOutboxRow {
   last_error: string | null;
   sent_at: Date | null;
   created_at: Date;
+  updated_at: Date;
+  idempotency_key: string | null;
 }
 
 export interface EmailLogRow {

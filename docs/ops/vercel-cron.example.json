@@ -1,0 +1,20 @@
+{
+  "$comment": [
+    "EXAMPLE ONLY — do NOT copy to vercel.json yet.",
+    "",
+    "Vercel Hobby allows only DAILY cron jobs (once per day) and a limited",
+    "number of invocations; a sub-daily schedule like '*/5 * * * *' FAILS",
+    "deployment on Hobby. Pro plans allow per-minute schedules.",
+    "",
+    "Until the plan is known, prefer Supabase-side scheduling: pg_cron +",
+    "pg_net can call this endpoint on any interval with the CRON_SECRET",
+    "bearer (see docs/ops/email.md). Alternatively deploy this file's",
+    "'crons' block when a Pro plan is confirmed."
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/email-outbox",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}

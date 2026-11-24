@@ -603,6 +603,46 @@ CREATE TRIGGER login_logs_immutable
   BEFORE UPDATE OR DELETE ON login_logs
   FOR EACH STATEMENT EXECUTE FUNCTION prevent_audit_mutation();
 
+-- ################## 0009_email_outbox_hardening.sql ##################
+
+-- 0009_email_outbox_hardening.sql
+-- Outbox hardening for the Prompt 4 delivery worker:
+--   * updated_at + set_updated_at trigger (row mutation is now expected —
+--     claim/retry/redact all UPDATE)
+--   * idempotency_key (unique when present) so a business change can
+--     enqueue exactly-once even if its handler retries
+--   * throttle index  (to_email, template, created_at DESC) — the same
+--     predicate enqueueEmail's CTE uses to count recent sends
+--   * stale-lock index (locked_at WHERE status = 'sending') — the
+--     recovery sweep scans only claimed-but-dead rows
+--
+-- No new enum values: a row is "dead" when status = 'failed' AND
+-- attempts >= max_attempts (documented in docs/db/schema.md).
+-- Grants/RLS unchanged: ggcb_app already holds full DML on email_outbox
+-- (migration 0006), so db:verify expectations stay the same.
+
+ALTER TABLE email_outbox
+  ADD COLUMN updated_at       timestamptz NOT NULL DEFAULT now(),
+  ADD COLUMN idempotency_key  text;
+
+CREATE TRIGGER email_outbox_set_updated_at
+  BEFORE UPDATE ON email_outbox
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- At most one row per idempotency key.
+CREATE UNIQUE INDEX email_outbox_idempotency_key_uq
+  ON email_outbox (idempotency_key)
+  WHERE idempotency_key IS NOT NULL;
+
+-- Per-recipient+template throttle: count rows created in the window.
+CREATE INDEX email_outbox_throttle_idx
+  ON email_outbox (to_email, template, created_at DESC);
+
+-- Stale-lock recovery: claimed rows whose lease expired.
+CREATE INDEX email_outbox_stale_lock_idx
+  ON email_outbox (locked_at)
+  WHERE status = 'sending';
+
 -- Ledger rows for the migrations above (sha256, EOL-normalised — the
 -- same values `pnpm db:migrate` records).
 
@@ -614,6 +654,7 @@ INSERT INTO applied_migrations (id, name, checksum, execution_ms) VALUES
   (5, '0005_audit.sql', 'e4949cb32e86ce60c5b5e8e1da94c1e3eb38c47d22627518d800329730464448', 0),
   (6, '0006_security_baseline.sql', 'c24afb2843ca143d9bbd2638ce132c758025e74a913245d5e2ca4867e53d7f98', 0),
   (7, '0007_owner_membership_in_ggcb_app.sql', 'de863d4e7f53338e7f5715558cbe9afd111f28a2fdd1ff2c5a50e042476a155a', 0),
-  (8, '0008_statement_level_audit_immutability.sql', '56391694358415d05e13224e6b39af51e06a79940c9a57a429cc1688676d661d', 0);
+  (8, '0008_statement_level_audit_immutability.sql', '56391694358415d05e13224e6b39af51e06a79940c9a57a429cc1688676d661d', 0),
+  (9, '0009_email_outbox_hardening.sql', '2893687d16c5272c22c1fb73d7fcd1cecc3df7252073b221f8d7c3fb949f8507', 0);
 
 COMMIT;

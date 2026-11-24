@@ -19,5 +19,17 @@ services:
       timeout: 3s
       retries: 10
 
+  # Local SMTP sink for the email worker (Prompt 4). Point
+  # EMAIL_MODE=smtp, SMTP_HOST=localhost, SMTP_PORT=1025, SMTP_SECURE=false
+  # (STARTTLS: Mailpit accepts plain for dev), any SMTP_USER/PASSWORD, and
+  # browse http://localhost:8025 to inspect captured mail. Infrastructure,
+  # not an application dependency.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI + API
+
 volumes:
   pgdata:

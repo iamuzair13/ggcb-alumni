@@ -61,7 +61,9 @@ erDiagram
         uuid id PK
         citext to_email
         outbox_status status
-        jsonb payload "nulled after send"
+        jsonb payload "AES-256-GCM envelope; nulled after send"
+        text idempotency_key "partial unique"
+        timestamptz updated_at
     }
     email_logs {
         bigint id PK
@@ -79,20 +81,20 @@ erDiagram
 
 ## Per-table purpose
 
-| Table                    | Purpose                                                                                                                                                                           |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `applied_migrations`     | Runner ledger: id, filename, SHA-256 checksum, applied_at, execution_ms. Bootstrap-created by the runner.                                                                         |
-| `users`                  | ALL login identities — staff (superadmin/admin/viewer) and alumni. `session_version` invalidates JWTs on bump. `password_hash` stays NULL until the set-password flow (Prompt 3). |
-| `departments`            | BS departments only. Normalised unique name+code. No seed rows (D3).                                                                                                              |
-| `alumni`                 | The alumni data record. `user_id` nullable for imported-only records. `roll_number_norm` generated `lower(btrim(roll_number))`. Workflow fields per §6.                           |
-| `alumni_change_requests` | Field change requests (`changes` = field → {old,new}). Max one pending per alumnus.                                                                                               |
-| `auth_attempts`          | DB-backed login rate limiting. `key_hash` is SHA-256 hex of the normalised email or IP — raw values are never stored.                                                             |
-| `auth_tokens`            | Hashed email-verification / password-reset tokens (single use, expiring).                                                                                                         |
-| `email_outbox`           | Transactional email queue. `payload` may be nulled after send (one-time links must not linger).                                                                                   |
-| `email_logs`             | Append-only delivery log (`status` is text so logs outlive enum changes).                                                                                                         |
-| `admin_activity_logs`    | Append-only staff action log.                                                                                                                                                     |
-| `login_logs`             | Append-only login attempt log.                                                                                                                                                    |
-| `applied_migrations`     | see above                                                                                                                                                                         |
+| Table                    | Purpose                                                                                                                                                                                                                                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `applied_migrations`     | Runner ledger: id, filename, SHA-256 checksum, applied_at, execution_ms. Bootstrap-created by the runner.                                                                                                                                                                                                      |
+| `users`                  | ALL login identities — staff (superadmin/admin/viewer) and alumni. `session_version` invalidates JWTs on bump. `password_hash` stays NULL until the set-password flow (Prompt 3).                                                                                                                              |
+| `departments`            | BS departments only. Normalised unique name+code. No seed rows (D3).                                                                                                                                                                                                                                           |
+| `alumni`                 | The alumni data record. `user_id` nullable for imported-only records. `roll_number_norm` generated `lower(btrim(roll_number))`. Workflow fields per §6.                                                                                                                                                        |
+| `alumni_change_requests` | Field change requests (`changes` = field → {old,new}). Max one pending per alumnus.                                                                                                                                                                                                                            |
+| `auth_attempts`          | DB-backed login rate limiting. `key_hash` is SHA-256 hex of the normalised email or IP — raw values are never stored.                                                                                                                                                                                          |
+| `auth_tokens`            | Hashed email-verification / password-reset tokens (single use, expiring).                                                                                                                                                                                                                                      |
+| `email_outbox`           | Transactional email queue. `payload` holds an AES-256-GCM envelope (HKDF key from AUTH_SECRET, label `email-outbox-payload`) and is nulled after send. A row is **dead** when `status='failed' AND attempts >= max_attempts` — no enum value; `idempotency_key` is unique when present (exactly-once enqueue). |
+| `email_logs`             | Append-only delivery log (`status` is text so logs outlive enum changes).                                                                                                                                                                                                                                      |
+| `admin_activity_logs`    | Append-only staff action log.                                                                                                                                                                                                                                                                                  |
+| `login_logs`             | Append-only login attempt log.                                                                                                                                                                                                                                                                                 |
+| `applied_migrations`     | see above                                                                                                                                                                                                                                                                                                      |
 
 ## Index rationale
 
@@ -113,6 +115,9 @@ dataset is small; space efficiency is a stated priority).
 | `auth_attempts_lookup_idx`                                            | Rate-limit window read: `(kind, key_hash)` newest-first.                                                                               |
 | `auth_tokens_user_type_idx`                                           | Token invalidation/lookup per user+type.                                                                                               |
 | `email_outbox_retry_idx` (partial)                                    | Worker sweep: next-due `pending`/`failed` rows.                                                                                        |
+| `email_outbox_idempotency_key_uq` (partial unique)                    | At most one row per `idempotency_key` — exactly-once enqueue for retried business ops.                                                 |
+| `email_outbox_throttle_idx`                                           | Per-recipient+template send counting: `(to_email, template, created_at DESC)`.                                                         |
+| `email_outbox_stale_lock_idx` (partial, `status='sending'`)           | Stale-lock recovery: claimed rows whose lease expired.                                                                                 |
 | `admin_activity_logs_created_at_idx`, `admin_activity_logs_actor_idx` | Audit list ordering + per-actor view.                                                                                                  |
 | `email_logs_created_at_idx`, `login_logs_created_at_idx`              | Audit list ordering.                                                                                                                   |
 
