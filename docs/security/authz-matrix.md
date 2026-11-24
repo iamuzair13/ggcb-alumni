@@ -19,6 +19,7 @@ side; the e2e matrix spec asserts the real statuses.
 | Route | anonymous | alumni-under_approval | alumni-rejected | alumni-verified | viewer | admin | superadmin |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `/` (page) | 200 | 200 | 200 | 200 | 200 | 200 | 200 |
+| `/privacy` (page) | 200 | 200 | 200 | 200 | 200 | 200 | 200 |
 | `/login` (page) | 200 | → /dashboard | → /dashboard | → /dashboard | → /admin | → /admin | → /admin |
 | `/register` (page) | 200 | → /dashboard | → /dashboard | → /dashboard | → /admin | → /admin | → /admin |
 | `/forgot-password` (page) | 200 | → /dashboard | → /dashboard | → /dashboard | → /admin | → /admin | → /admin |

@@ -149,4 +149,41 @@
   .tnum {
     font-variant-numeric: tabular-nums;
   }
+
+  /* ── Landing reveal — one orchestrated entrance, ~450 ms total. ──────
+     Reduced-motion: the global rule above flattens it to a static page. */
+  @keyframes ledger-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-reveal {
+    animation: ledger-reveal 320ms ease-out both;
+  }
+
+  /* ── Print: E-card is the only thing worth printing ───────────────── */
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    .print-ecard,
+    .print-ecard * {
+      visibility: visible;
+    }
+    .print-ecard {
+      position: fixed;
+      inset: 0;
+      margin: auto;
+      max-width: 90mm;
+      box-shadow: none !important;
+    }
+    .no-print {
+      display: none !important;
+    }
+  }
 }

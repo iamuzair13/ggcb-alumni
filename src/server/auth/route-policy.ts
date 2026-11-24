@@ -33,6 +33,7 @@ export const STAFF_OPS: Role[] = ["superadmin", "admin"];
 export const ROUTE_POLICY: RoutePolicyEntry[] = [
   // ── public ────────────────────────────────────────────────────────────
   { pattern: "/", kind: "page", roles: "public" },
+  { pattern: "/privacy", kind: "page", roles: "public" },
   { pattern: "/login", kind: "page", roles: "public", guestOnly: true },
   { pattern: "/register", kind: "page", roles: "public", guestOnly: true },
   {
