@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const publicRoutes = [
-  { path: "/", heading: /Government Postgraduate College Burewala/i },
+  { path: "/", heading: /alumni record/i },
   { path: "/login", heading: /sign in/i },
   { path: "/register", heading: /register as alumni/i },
   { path: "/forgot-password", heading: /reset your password/i },
