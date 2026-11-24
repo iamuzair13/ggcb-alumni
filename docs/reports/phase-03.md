@@ -194,7 +194,7 @@ cleanly without it — `test:db` reported `44 skipped` locally.
 - `pnpm build` + `next start` → `POST /api/auth/callback/credentials`
   for the real seeded superadmin → **302 + `__Host-authjs.session-token`
   (Secure, HttpOnly, SameSite=Lax)**; `/api/auth/session` returned
-  `{id, name:"Uzair Shafqat", role:"superadmin", sessionVersion:1}`;
+  `{id, name:<owner name>, role:"superadmin", sessionVersion:1}`;
   `/api/auth/me` → `{id,name,role}` + `Cache-Control: private,no-store`;
   wrong password → `code=invalid_credentials` (generic).
 - Cookie-less vs cookie-bearing paths both verified (proxy 307 vs
@@ -221,7 +221,7 @@ cleanly without it — `test:db` reported `44 skipped` locally.
 ## 13. Owner action items
 
 1. **Rotate the superadmin password now** — it was seeded out-of-band
-   (`ggcbadmin@12`, deliberately weak):
+   with a deliberately weak value (never committed):
    `pnpm auth:set-password --email <your-email>` — hidden prompt, bumps
    `session_version` (kills other sessions), writes an audit row.
    See `docs/ops/auth-runbook.md`.

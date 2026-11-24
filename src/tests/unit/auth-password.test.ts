@@ -82,9 +82,9 @@ describe("password policy", () => {
       }).ok,
     ).toBe(false);
     expect(
-      validatePasswordPolicy("uzairshafqatpass", {
+      validatePasswordPolicy("janedoeverysecretpass", {
         email: "u@x.com",
-        name: "uzair shafqat",
+        name: "jane doe",
       }).ok,
     ).toBe(false);
     // short (<3 char) local parts/names are not checked

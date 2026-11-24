@@ -15,6 +15,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Guard runs outside Suspense (real 403/307) → this route is blocking by
+// definition; there is no instant shell to stream.
+export const instant = false;
+
 /**
  * Admin shell — requireStaff() is the security boundary, awaited OUTSIDE
  * Suspense so redirect()/forbidden() produce real HTTP statuses (a

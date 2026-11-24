@@ -11,3 +11,7 @@ public
 next-env.d.ts
 
 context.md
+
+# generated artifacts — must match their generators byte-for-byte
+docs/security/authz-matrix.md
+docs/ops/schema-bootstrap.sql
