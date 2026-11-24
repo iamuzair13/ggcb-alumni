@@ -22,6 +22,9 @@ side; the e2e matrix spec asserts the real statuses.
 | `/login` (page) | 200 | → /dashboard | → /dashboard | → /dashboard | → /admin | → /admin | → /admin |
 | `/register` (page) | 200 | → /dashboard | → /dashboard | → /dashboard | → /admin | → /admin | → /admin |
 | `/forgot-password` (page) | 200 | → /dashboard | → /dashboard | → /dashboard | → /admin | → /admin | → /admin |
+| `/verify-email` (page) | 200 | 200 | 200 | 200 | 200 | 200 | 200 |
+| `/reset-password` (page) | 200 | 200 | 200 | 200 | 200 | 200 | 200 |
+| `/set-password` (page) | 200 | 200 | 200 | 200 | 200 | 200 | 200 |
 | `/design` (page) | 404 (prod) | 404 (prod) | 404 (prod) | 404 (prod) | 404 (prod) | 404 (prod) | 404 (prod) |
 | `/api/health` (api) | 200 | 200 | 200 | 200 | 200 | 200 | 200 |
 | `/api/auth/me` (api) | 401 | 200 | 200 | 200 | 200 | 200 | 200 |

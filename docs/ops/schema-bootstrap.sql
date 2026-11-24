@@ -643,6 +643,27 @@ CREATE INDEX email_outbox_stale_lock_idx
   ON email_outbox (locked_at)
   WHERE status = 'sending';
 
+-- ################## 0010_auth_attempt_kinds.sql ##################
+
+-- 0010_auth_attempt_kinds.sql — allow non-login attempt kinds
+--
+-- Prompt 5 (§4.2): password-reset and email-verification request limits are
+-- rate-limited in the SAME table so abuse of every credential path is
+-- bounded and auditable. `kind` gains 'password_reset' and 'email_verify'.
+-- Unlike 'login' (which records FAILURES only — a blocked attempt writes
+-- nothing so lockouts cannot refresh themselves), the request kinds record
+-- EVERY request: they count submissions, not failures, because each
+-- request has a real cost (an email) even when the email address is bogus.
+-- The limiter therefore queries `kind` + `key_hash` without a `succeeded`
+-- predicate; succeeded=false is written by convention (the row is a
+-- request record, not an outcome).
+--
+-- Forward-only; no data changes. Existing 'login' rows are untouched.
+ALTER TABLE public.auth_attempts
+  DROP CONSTRAINT auth_attempts_kind_known,
+  ADD CONSTRAINT auth_attempts_kind_known
+    CHECK (kind IN ('login', 'password_reset', 'email_verify'));
+
 -- Ledger rows for the migrations above (sha256, EOL-normalised — the
 -- same values `pnpm db:migrate` records).
 
@@ -655,6 +676,7 @@ INSERT INTO applied_migrations (id, name, checksum, execution_ms) VALUES
   (6, '0006_security_baseline.sql', 'c24afb2843ca143d9bbd2638ce132c758025e74a913245d5e2ca4867e53d7f98', 0),
   (7, '0007_owner_membership_in_ggcb_app.sql', 'de863d4e7f53338e7f5715558cbe9afd111f28a2fdd1ff2c5a50e042476a155a', 0),
   (8, '0008_statement_level_audit_immutability.sql', '56391694358415d05e13224e6b39af51e06a79940c9a57a429cc1688676d661d', 0),
-  (9, '0009_email_outbox_hardening.sql', '2893687d16c5272c22c1fb73d7fcd1cecc3df7252073b221f8d7c3fb949f8507', 0);
+  (9, '0009_email_outbox_hardening.sql', '2893687d16c5272c22c1fb73d7fcd1cecc3df7252073b221f8d7c3fb949f8507', 0),
+  (10, '0010_auth_attempt_kinds.sql', '1e92c341db7ebfa0f39b858e39f5b5e31acfb16ac96ae6a2a08172512a41a55c', 0);
 
 COMMIT;

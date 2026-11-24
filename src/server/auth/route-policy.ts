@@ -41,6 +41,11 @@ export const ROUTE_POLICY: RoutePolicyEntry[] = [
     roles: "public",
     guestOnly: true,
   },
+  // Token pages are public but NOT guestOnly — a signed-in user may still
+  // open them (spec §4.5); consumption is POST-only.
+  { pattern: "/verify-email", kind: "page", roles: "public" },
+  { pattern: "/reset-password", kind: "page", roles: "public" },
+  { pattern: "/set-password", kind: "page", roles: "public" },
   { pattern: "/design", kind: "page", roles: "public", devOnly: true },
   { pattern: "/api/health", kind: "api", roles: "public" },
   { pattern: "/api/auth/me", kind: "api", roles: "any" },

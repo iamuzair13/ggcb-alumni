@@ -25,10 +25,12 @@ export async function createAuthToken(
   tx: postgres.Sql | postgres.TransactionSql,
   userId: string,
   type: AuthTokenType,
+  /** Overrides the type default — staff invitations use 72 h on password_reset. */
+  ttlMs?: number,
 ): Promise<{ raw: string; expiresAt: Date }> {
   const raw = randomBytes(32).toString("base64url");
   const tokenHash = hashToken(raw);
-  const expiresAt = new Date(Date.now() + TTL_MS[type]);
+  const expiresAt = new Date(Date.now() + (ttlMs ?? TTL_MS[type]));
 
   const run = async (t: postgres.TransactionSql) => {
     // Invalidate previous unused tokens of this type for the user.
@@ -56,7 +58,7 @@ export type ConsumeResult = { ok: true; userId: string } | { ok: false };
  * "unknown" to the caller.
  */
 export async function consumeAuthToken(
-  sql: postgres.Sql,
+  sql: postgres.Sql | postgres.TransactionSql,
   raw: string,
   type: AuthTokenType,
 ): Promise<ConsumeResult> {

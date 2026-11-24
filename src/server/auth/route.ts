@@ -83,8 +83,9 @@ export function defineRoute<C extends NextRouteContext = NextRouteContext>(
   };
 }
 
-export type ActionResult<T> =
-  { ok: true; data: T } | { ok: false; code: string; message: string };
+import type { ActionResult } from "@/lib/result";
+
+export type { ActionResult };
 
 type ActionOptions<S extends z.ZodType, T> = RoutePolicy & {
   input: S;

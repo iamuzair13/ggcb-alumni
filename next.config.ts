@@ -78,6 +78,17 @@ const nextConfig: NextConfig = {
         source: "/api/auth/me",
         headers: [{ key: "Cache-Control", value: "private, no-store" }],
       },
+      // Token pages carry secrets in the URL — no referrer leakage,
+      // never cached (spec §4.1).
+      ...["/verify-email", "/reset-password", "/set-password"].map(
+        (source) => ({
+          source,
+          headers: [
+            { key: "Referrer-Policy", value: "no-referrer" },
+            { key: "Cache-Control", value: "no-store" },
+          ],
+        }),
+      ),
     ];
   },
 };

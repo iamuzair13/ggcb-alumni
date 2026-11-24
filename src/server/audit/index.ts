@@ -31,6 +31,16 @@ export const ADMIN_ACTIONS = [
   // Prompt 6+ placeholders (profile/changes)
   "alumni.change_request_created",
   "alumni.change_request_decided",
+  // Prompt 5 (staff + departments)
+  "admin.user_updated",
+  "admin.user_reactivated",
+  "admin.invitation_resent",
+  "admin.password_reset_sent",
+  "admin.department_created",
+  "admin.department_updated",
+  "admin.department_activated",
+  "admin.department_deactivated",
+  "admin.department_deleted",
   // Prompt 7 placeholders (admin ops)
   "admin.registration_decided",
   "admin.user_created",
