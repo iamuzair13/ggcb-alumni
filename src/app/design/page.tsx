@@ -120,6 +120,16 @@ import { ToastDemo } from "./toast-demo";
 import { PasswordFieldDemo, RowActionsDemo } from "./patterns-demo";
 import { InlineAlert } from "@/components/shared/inline-alert";
 import { UserStatusBadge } from "@/components/shared/user-status-badge";
+import { EcardArtifact } from "@/components/shared/ecard-artifact";
+import { LedgerRule } from "@/components/shared/ledger-rule";
+import { ParagraphText } from "@/components/shared/paragraph-text";
+import {
+  CalendarDemo,
+  ChartsDemo,
+  DisplayBitsDemo,
+  DropZoneDemo,
+  StepperDemo,
+} from "./phase6-demo";
 
 export const metadata: Metadata = {
   title: "Design system",
@@ -836,6 +846,65 @@ export default function DesignPage() {
             the fixture previews under{" "}
             <code className="font-mono text-xs">/design/screens/*</code>.
           </p>
+        </Section>
+
+        {/* Phase 6 — the "college ledger" direction */}
+        <Section id="ledger" title="Ledger motif & E-card (Phase 6)">
+          <div className="max-w-2xl space-y-6">
+            <div>
+              <h3 className="mb-2 text-sm font-medium">
+                LedgerRule — the signature section divider
+              </h3>
+              <LedgerRule />
+            </div>
+            <div>
+              <h3 className="mb-2 text-sm font-medium">
+                EcardArtifact — the crafted card (active / revoked / unissued)
+              </h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <EcardArtifact
+                  name="Sample Ayesha Khan"
+                  department="Sample Computer Science"
+                  session="2019–2023"
+                  cardNo="GGCB-EC-000001"
+                  rollNumber="GG-2019-0001"
+                  status="active"
+                />
+                <EcardArtifact
+                  name="Sample Bilal Qureshi"
+                  department="Sample Mathematics"
+                  session="2020–2024"
+                  cardNo="GGCB-EC-000002"
+                  status="revoked"
+                />
+              </div>
+            </div>
+            <div>
+              <h3 className="mb-2 text-sm font-medium">
+                ParagraphText — plain-text → paragraphs (never HTML)
+              </h3>
+              <ParagraphText
+                className="max-w-prose rounded-lg border bg-card p-4 text-sm text-muted-foreground"
+                text={
+                  "First paragraph of a story.\n\nSecond paragraph, kept as plain text. No markup is ever rendered."
+                }
+              />
+            </div>
+          </div>
+        </Section>
+
+        <Section id="charts" title="Charts, calendar, stepper (Phase 6)">
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Hand-built SVG charts — no dependency. Every chart has a tooltip,
+            focusable points, an sr-only summary and a “View as table” toggle.
+          </p>
+          <ChartsDemo />
+          <div className="grid max-w-4xl gap-6 lg:grid-cols-2">
+            <StepperDemo />
+            <CalendarDemo />
+          </div>
+          <DropZoneDemo />
+          <DisplayBitsDemo />
         </Section>
       </main>
     </TooltipProvider>
