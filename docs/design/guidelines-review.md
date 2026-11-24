@@ -123,3 +123,63 @@ without a note.
 - **`useSearchParams` discipline:** `ListToolbar` and the login form run
   inside Suspense boundaries; token pages read `searchParams` inside a
   nested `<Suspense>` (Cache Components requirement � build verified).
+
+## Prompt 6 additions � complete UI sweep
+
+- **React purity lint caught `Date.now()`/`new Date()` in render**
+  (`DeadlineBadge`, `CalendarGrid`, `phase6-demo`, `DonutChart` fold).
+  Rule: capture "now" once � `useState(() => new Date())` in client
+  components, module-scope constants for demo data. Render must be a pure
+  function of props/state; time is state, not a prop.
+- **CSS grid `min-width:auto` bit us at 360px** � `grid` children can't
+  shrink below their content's min-content width, so one rigid child (the
+  E-card, a 433px action row) stretched the whole single-column track and
+  produced page-level horizontal scroll on every alumni/admin page. Fix
+  is structural: `min-w-0` on grid children + `flex-wrap` on action rows.
+  Same class of bug as `min-w-0` on flex items � remember it for every
+  `grid` that must survive 360px.
+- **Tab bars follow the DataTable pattern:** `TabsList` is
+  `inline-flex w-fit`; wrap it in `overflow-x-auto` when it can exceed
+  the viewport (admin directory's 5 tabs, content-admin's 5 tabs) �
+  internal scroll, never page scroll.
+- **DonutChart legend+svg row** exceeded card width at 360px: svg capped
+  at `max-w-[55%]` with `shrink`, legend `min-w-0` + `truncate`.
+- **Demo topbar** wraps (`flex-wrap`) and collapses labels below `sm`;
+  persona switcher keeps `min-w-48` (still 44px target height via
+  `size="sm"` trigger + padding).
+- **Alumni nav order** = `ALUMNI_DEMO_ROUTES` order � dashboard �
+  stories, then account last (profile-like destination), matching the
+  mental model from the blueprint.
+- **Status never colour alone, continued:** `DeadlineBadge` always prints
+  text ("Closed", "Nd left", "Closes today"); verify page shows
+  icon + text badges for every state.
+- **Charts are accessible by construction, not bolt-on:** focusable data
+  points (`tabIndex=0` + `<title>`), `role="img"` + `aria-label`, an
+  sr-only summary, and a real "View as table" toggle that swaps the SVG
+  for a `<table>` � tested in `components-phase6.test.tsx`.
+- **Public E-card verify shows the minimum:** name, department, passing
+  year, card status � a component test asserts no contact details render
+  in any state.
+- **360px sweep:** `scripts/design-screenshots.mjs` screenshots all 29
+  routes at 360/768/1280 into `design-review/phase-06/` and asserts
+  `scrollWidth == clientWidth` at 360px for every route � currently all
+  clean (the fix list above is what it caught).
+- **Base UI `Select` trigger is `role="combobox"`** � ARIA forbids naming
+  a combobox from inner content, so visible text does NOT count as its
+  accessible name (axe `button-name`, critical). `aria-label` must sit on
+  `SelectTrigger`, never on `Select` root (silently lands nowhere).
+  Caught on the persona switcher + analytics range select; every trigger
+  in the codebase now carries `aria-label`/`id`+`htmlFor`.
+- **`aria-hidden` does not exempt visual text from contrast.** The
+  landing's decorative "01/02/03" step numerals at `text-primary/25`
+  (1.54:1) failed even after marking them `aria-hidden` � the rule is
+  vision-based, not SR-based. Fix: real contrast � `text-primary/70`
+  (~4:1, large-text threshold is 3:1).
+- **`display:contents` + `role="row"`** is the valid way to wrap
+  `grid`/`gridcell` children inside `role="grid"` without breaking
+  `grid-cols-7` layout (calendar fix; `last:border-r-0` replaces the
+  `nth-child(7n)` selector since rows reset child position).
+- **Card-wide `opacity-*` dims text below contrast.** Expired
+  opportunity cards used `opacity-80` � axe computes composited colours
+  (3.8:1 < 4.5). Use `bg-muted/40` alone for "muted" surfaces; the
+  Closed badge + disabled Apply already carry the state.

@@ -166,19 +166,18 @@ Navigation visibility follows the role matrix (viewer: 5 sections; admin:
 Each prompt below is a vertical slice: real backend + finished UI +
 previews. Tests are still written, but see the testing note in each prompt.
 
-| #   | Slice                                                                                     | Why this order                                                                                                    |
-| --- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 1–4 | Foundation, DB, Auth, Email                                                               | Done                                                                                                              |
-| 5   | Account flows (verify/forgot/reset/set password) + Staff users + Departments CRUD         | Departments must exist before registration; the invite flow needs the set-password page                           |
-| 6   | Public landing + privacy + Registration + check-email + under-approval dashboard          | First public-facing experience                                                                                    |
-| 7   | Admin alumni: directory, filters, approvals, change-request review, demo-data tool        | Gives registrations somewhere to go; the demo data enables UI review                                              |
-| 8   | Alumni profile hub + account + dashboard completion                                       | Verified alumni can manage their record                                                                           |
-| 9   | E-card (issue, view, download, public verify)                                             | Depends on verified alumni                                                                                        |
-| 10  | Content: events, announcements, opportunities, stories, featured                          | Engagement features                                                                                               |
-| 11  | Import / export                                                                           | Needs stable alumni schema and UI patterns                                                                        |
-| 12  | Analytics + admin dashboard + audit logs UI                                               | Needs real data shapes                                                                                            |
-| 13  | UI polish and audit: responsive QA, guidelines pass, empty/error state sweep, performance | Cross-cutting quality                                                                                             |
-| 14  | Security hardening, full test execution, deployment                                       | Includes running all deferred suites, history rewrite, password rotation, CSP tightening, production verification |
+| #   | Slice                                                                                                   | Why this order                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 1–5 | Foundation, DB, Auth, Email, Account flows + Staff + Departments                                        | Done                                                                                                    |
+| 6   | **Complete UI** — every remaining screen as a clickable prototype (`/design/demo/**`)                   | Done — real `/` + `/privacy` shipped; views/schemas/ports ready to wire (`docs/design/wiring-guide.md`) |
+| 7   | Wire: landing CTAs, **registration**, verify handoff, under-approval dashboard, `/register/check-email` | First public-facing experience                                                                          |
+| 8   | Wire: **admin alumni** (directory, filters, approvals, change requests) + demo-data tool                | Gives registrations somewhere to go                                                                     |
+| 9   | Wire: **alumni profile hub**, account, dashboard, photo upload                                          | Verified alumni can manage their record                                                                 |
+| 10  | Wire: **E-card** (issue, QR, download, public verify)                                                   | Depends on verified alumni                                                                              |
+| 11  | Wire: **content** (events, announcements, opportunities, stories, featured)                             | Engagement features                                                                                     |
+| 12  | Wire: **import / export**                                                                               | Needs stable alumni schema                                                                              |
+| 13  | Wire: **analytics, admin dashboard, audit logs**                                                        | Needs real data shapes                                                                                  |
+| 14  | Security hardening, run all deferred suites, history cleanup, deployment                                | Includes running all deferred suites, history rewrite, CSP tightening, production verification          |
 
 **Hard gate [Recommended]:** nothing is deployed publicly and no real
 alumni data is collected before Prompt 14 has executed the skipped database

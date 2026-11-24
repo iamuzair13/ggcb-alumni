@@ -236,3 +236,25 @@ max_attempts`; no `outbox_status` value added (spec �4.2).
   `alumni-rejected` persona added � the matrix lists every section.
 - **Mailpit** for local/CI SMTP (docker-compose + CI service container) �
   infrastructure, not an app dependency.
+
+### Phase 6 � complete UI (prototype)
+
+- **No new runtime dependencies.** Charts, calendar, stepper, dropzone and
+  the QR placeholder are hand-built SVG/CSS/React per the prompt's default.
+  Rationale: the chart set is small (4 types, static data), a library
+  (recharts/d3/apexcharts ~100-200 KB) buys nothing here, and hand-built
+  SVG gives exact control over a11y (focusable points, view-as-table
+  fallback). Reassess if a later phase needs interaction-heavy charts.
+- **Fixture world is server-side only** (`src/features/_shared/fixtures/`).
+  Demo client views receive data as props; adapter factories contain logic
+  only. Verified by `scripts/check-demo-leak.ts` (grep .next/static for the
+  marker) and a unit test banning fixture imports in client files.
+- **Persona switcher is React context state** inside the dev-only demo �
+  it can never affect real auth by construction (no session, no cookie,
+  no real route consumes it).
+- **`/design/demo/**` inherits the `/design` devOnly route-policy entry** �
+  no new policy surface; matrix shows 404 for every persona in production.
+- **Native `<details>` for the landing FAQ** � zero-JS accordion, a11y for
+  free, no dependency; richer accordions stay a Base UI decision if needed.
+- **`registerSchema` lower-cases roll numbers** at parse time (normalized
+  uniqueness rule D4 default) so client and server agree on normalization.

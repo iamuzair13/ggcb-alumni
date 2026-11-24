@@ -225,3 +225,44 @@ Result types shared across the server/client boundary live in
 
 Screen previews with fixtures live under `/design/screens/*` (dev-only,
 404 in production): `account`, `users`, `departments`.
+
+## 12. Phase 6 � the "college ledger" direction + feature components
+
+The aesthetic direction lives in `docs/design/ui-direction.md`: a
+government college's record office � ledgers, roll numbers, card numbers �
+rendered warm. Expressive surfaces (public + alumni) use the ledger motif;
+admin stays quiet and dense. **No token changes** � the Phase-1 palette was
+already the right register; the only CSS additions are the `animate-reveal`
+landing keyframes and `print-ecard` print rules in `globals.css`.
+
+Signature + feature components (`components/shared/`):
+
+- **`LedgerRule` / `LedgerPattern`** � the signature divider (tick + rule)
+  and the faint ruled-paper texture for expressive sections. Decorative,
+  `aria-hidden`.
+- **`EcardArtifact`** � the alumni E-card rendered as a crafted object:
+  die-cut notches, crest placeholder, dashed photo frame, mono card number
+  on a baseline rule, and a deliberately-not-scannable QR placeholder
+  (labelled "QR PLACEHOLDER"). States: `active` / `revoked` / `unissued`.
+  `.print-ecard` isolates it for `window.print()`.
+- **`ParagraphText`** � the ONLY renderer for user/staff-authored plain
+  text (stories, announcements, bio): blank-line ? `<p>`. Never HTML,
+  never markdown.
+- **Charts** (`charts.tsx`): `ChartCard` (title + "View as table" toggle +
+  sr-only summary), `BarChartH`, `BarChartV`, `LineChart`, `DonutChart` �
+  hand-built SVG, focusable data points (`tabIndex`+`<title>`), values
+  always drawn so colour is never the only signal. `axisTicks`/`thinLabels`
+  are unit-tested pure functions.
+- **`CalendarGrid`** � Monday-first month grid with keyboard nav of months
+  and event chips; `monthGrid` math unit-tested.
+- **`Stepper`** � numbered wizard header (Upload?Map?Validate?Review?Commit);
+  `aria-current="step"`, done = check.
+- **`DropZone`** � labelled drop area + file button; validates extension and
+  size with inline copy (no silent reject).
+- **`DateBlock`**, **`DeadlineBadge`**, **`KpiCard`**,
+  **`CompletenessMeter`** (`role="progressbar"`), **`DiffTable`** (old vs
+  new for change requests), **`PersonaSwitcher`** + **`DemoBanner`** +
+  **`Demo*Shell`** (demo-only, under `components/demo/`).
+
+Copy patterns: empty state = title + one sentence + action; errors say
+what happened and what to do; destructive confirms name the object.
