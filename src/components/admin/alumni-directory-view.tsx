@@ -46,11 +46,39 @@ const TABS: {
   id: DirectoryTab;
   label: string;
   key: keyof DirectoryTabCounts;
+  /** Count chip tint — the same status hue the ledger cell carries. */
+  chip: string;
+  /** Active underline + label ink. */
+  active: string;
 }[] = [
-  { id: "verified", label: "Verified", key: "verified" },
-  { id: "under_approval", label: "Under approval", key: "underApproval" },
-  { id: "rejected", label: "Rejected", key: "rejected" },
-  { id: "requests", label: "Change requests", key: "pendingChangeRequests" },
+  {
+    id: "verified",
+    label: "Verified",
+    key: "verified",
+    chip: "bg-success text-success-foreground",
+    active: "border-success-foreground text-success-foreground",
+  },
+  {
+    id: "under_approval",
+    label: "Under approval",
+    key: "underApproval",
+    chip: "bg-warning text-warning-foreground",
+    active: "border-warning-foreground text-warning-foreground",
+  },
+  {
+    id: "rejected",
+    label: "Rejected",
+    key: "rejected",
+    chip: "bg-destructive/10 text-destructive",
+    active: "border-destructive text-destructive",
+  },
+  {
+    id: "requests",
+    label: "Change requests",
+    key: "pendingChangeRequests",
+    chip: "bg-info text-info-foreground",
+    active: "border-info-foreground text-info-foreground",
+  },
 ];
 
 const dateFmt = new Intl.DateTimeFormat("en-GB", {
@@ -94,7 +122,7 @@ function TabStrip({
                   className={cn(
                     "flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                     active
-                      ? "border-primary font-medium text-foreground"
+                      ? cn("font-medium", t.active)
                       : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                 >
@@ -102,9 +130,7 @@ function TabStrip({
                   <span
                     className={cn(
                       "tnum rounded-full px-1.5 py-0.5 text-xs",
-                      active
-                        ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground",
+                      t.chip,
                     )}
                   >
                     {counts[t.key]}
@@ -306,7 +332,7 @@ export function AlumniDirectoryView({
           <span className="min-w-0 truncate font-medium">{a.fullName}</span>
           {a.isFeatured ? (
             <CircleStar
-              className="size-3.5 shrink-0 text-primary"
+              className="size-3.5 shrink-0 text-accent-foreground"
               role="img"
               aria-label="Featured alumnus"
             />
