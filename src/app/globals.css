@@ -104,6 +104,53 @@
   --sidebar-ring: #1d4a34;
 }
 
+/*
+ * Dark — same identity, night register. Evergreen lifts for contrast; the
+ * status tints become dark washes so hue + tint pairs keep meaning.
+ */
+.dark {
+  color-scheme: dark;
+
+  --background: #101511;
+  --foreground: #e6eae4;
+  --card: #151c17;
+  --card-foreground: #e6eae4;
+  --popover: #151c17;
+  --popover-foreground: #e6eae4;
+  --primary: #74b894;
+  --primary-foreground: #0c130e;
+  --secondary: #1f2721;
+  --secondary-foreground: #e6eae4;
+  --muted: #1f2721;
+  --muted-foreground: #94a398;
+  --accent: #2b2514;
+  --accent-foreground: #d9bb6e;
+  --destructive: #e0796c;
+  --destructive-foreground: #160c0a;
+  --success: #14281b;
+  --success-foreground: #8fd3a6;
+  --warning: #2b2110;
+  --warning-foreground: #e0b470;
+  --info: #142430;
+  --info-foreground: #8fc4dc;
+  --border: #28332c;
+  --input: #38443c;
+  --ring: #74b894;
+  --chart-1: #74b894;
+  --chart-2: #8fd3a6;
+  --chart-3: #b9d4c4;
+  --chart-4: #4a6a58;
+  --chart-5: #d9bb6e;
+  --sidebar: #131a15;
+  --sidebar-foreground: #e6eae4;
+  --sidebar-primary: #74b894;
+  --sidebar-primary-foreground: #0c130e;
+  --sidebar-accent: #1f2721;
+  --sidebar-accent-foreground: #e6eae4;
+  --sidebar-border: #28332c;
+  --sidebar-ring: #74b894;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

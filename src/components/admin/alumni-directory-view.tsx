@@ -16,6 +16,7 @@ import {
   CircleStar,
   Clock,
   FileEdit,
+  Rows2,
   Search,
   Upload,
   UserCheck,
@@ -249,6 +250,7 @@ export function AlumniDirectoryView({
   sort,
   narrowed,
   pathname,
+  compact = false,
 }: {
   tab: DirectoryTab;
   counts: DirectoryTabCounts;
@@ -264,6 +266,8 @@ export function AlumniDirectoryView({
   narrowed: boolean;
   /** Route the list lives under — all generated hrefs stay local. */
   pathname: string;
+  /** Compact row density — URL state like everything else. */
+  compact?: boolean;
 }) {
   const registerEmpty =
     counts.verified + counts.underApproval + counts.rejected === 0;
@@ -484,8 +488,21 @@ export function AlumniDirectoryView({
         filters={tab === "requests" ? [] : toolbarFilters}
       />
 
+      <div className="flex justify-end">
+        <Link
+          href={buildListHref(pathname, params, {
+            density: compact ? undefined : "compact",
+          })}
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <Rows2 className="size-3.5" aria-hidden="true" />
+          {compact ? "Comfortable view" : "Compact view"}
+        </Link>
+      </div>
+
       {tab === "requests" ? (
         <DataTable
+          compact={compact}
           columns={requestColumns}
           rows={requests}
           caption="Alumni change requests — restricted-field edits waiting for review."
@@ -507,6 +524,7 @@ export function AlumniDirectoryView({
         />
       ) : (
         <DataTable
+          compact={compact}
           columns={alumniColumns}
           rows={rows}
           caption={`Alumni records — ${TABS.find((t) => t.id === tab)?.label.toLowerCase()}.`}

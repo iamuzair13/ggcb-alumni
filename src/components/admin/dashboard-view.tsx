@@ -9,13 +9,23 @@
  * component — the interactive parts it composes (charts) are client islands.
  */
 import Link from "next/link";
-import { UserPlus } from "lucide-react";
+import { ArrowDown, ArrowUp, UserPlus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
-import { BarChartV, ChartCard } from "@/components/shared/charts";
+import {
+  AreaChartV,
+  BarChartH,
+  ChartCard,
+  DonutChart,
+  Sparkline,
+} from "@/components/shared/charts";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import {
+  departmentsTop,
+  trendDelta,
+} from "@/features/admin-dashboard/chart-data";
 import type { AdminDashboardData } from "@/features/admin-dashboard/types";
 
 type LedgerTone =
@@ -50,6 +60,8 @@ interface LedgerCell {
   tone: LedgerTone;
   /** Non-zero value should pull the eye — full status tint. */
   accent?: boolean;
+  /** Inline trend spark + period delta (real — from the trend series). */
+  spark?: { values: number[]; delta: number; up: boolean; meaningful: boolean };
 }
 
 export function AdminDashboardView({
@@ -62,6 +74,8 @@ export function AdminDashboardView({
 }) {
   const { kpis, recentRegistrations } = data;
   const trend = data.trend.map((t) => ({ label: t.month, value: t.count }));
+  const delta = trendDelta(data.trend);
+  const deptTop = departmentsTop();
 
   const ledger: LedgerCell[] = [
     {
@@ -69,6 +83,7 @@ export function AdminDashboardView({
       value: kpis.totalAlumni,
       href: "/admin",
       tone: "primary",
+      spark: { values: data.trend.map((t) => t.count), ...delta },
     },
     {
       label: "Verified",
@@ -133,6 +148,28 @@ export function AdminDashboardView({
                 <span className="tnum font-heading text-2xl font-semibold">
                   {c.value}
                 </span>
+                {c.spark ? (
+                  <span className="mt-1 space-y-0.5">
+                    <Sparkline values={c.spark.values} label="" />
+                    {c.spark.meaningful ? (
+                      <span
+                        className={cn(
+                          "tnum flex items-center gap-1 text-xs font-medium",
+                          c.spark.up
+                            ? "text-success-foreground"
+                            : "text-destructive",
+                        )}
+                      >
+                        {c.spark.up ? (
+                          <ArrowUp className="size-3" aria-hidden="true" />
+                        ) : (
+                          <ArrowDown className="size-3" aria-hidden="true" />
+                        )}
+                        {Math.abs(c.spark.delta)} vs prior month
+                      </span>
+                    ) : null}
+                  </span>
+                ) : null}
               </Link>
             </li>
           ))}
@@ -150,8 +187,78 @@ export function AdminDashboardView({
       </section>
 
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* Register split — status hues, same tokens as the ledger */}
+        <section className="min-w-0" aria-labelledby="split-t">
+          <ChartCard
+            title="Register split"
+            summary={`Register by status: ${kpis.verified} verified, ${kpis.underApproval} under approval, ${kpis.rejected} rejected.`}
+            headers={["Status", "Records"]}
+            rows={[
+              ["Verified", kpis.verified],
+              ["Under approval", kpis.underApproval],
+              ["Rejected", kpis.rejected],
+            ]}
+            height={180}
+          >
+            <DonutChart
+              data={[
+                {
+                  label: "Verified",
+                  value: kpis.verified,
+                  tone: "success",
+                },
+                {
+                  label: "Under approval",
+                  value: kpis.underApproval,
+                  tone: "warning",
+                },
+                {
+                  label: "Rejected",
+                  value: kpis.rejected,
+                  tone: "destructive",
+                },
+              ]}
+            />
+          </ChartCard>
+        </section>
+
+        {/* 6-month trend — area + gradient, 2/3 of the row */}
+        <section className="min-w-0 lg:col-span-2" aria-labelledby="trend-t">
+          <ChartCard
+            title="Registrations — last 6 months"
+            summary={`Registrations by month: ${data.trend
+              .map((t) => `${t.month} ${t.count}`)
+              .join(", ")}.`}
+            headers={["Month", "Registrations"]}
+            rows={data.trend.map((t) => [t.month, t.count])}
+            height={180}
+          >
+            <AreaChartV data={trend} />
+          </ChartCard>
+        </section>
+
+        {/* Top-N departments — mock until a grouped count query lands */}
+        <section className="min-w-0" aria-labelledby="dept-t">
+          <ChartCard
+            title="Alumni by department"
+            summary={`Top departments by alumni: ${deptTop.data
+              .map((d) => `${d.label} ${d.value}`)
+              .join(", ")}.`}
+            headers={["Department", "Alumni"]}
+            rows={deptTop.data.map((d) => [d.label, d.value])}
+            height={180}
+          >
+            <BarChartH data={deptTop.data} />
+          </ChartCard>
+          {deptTop.mock ? (
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Sample figures — the per-department count query isn't wired yet.
+            </p>
+          ) : null}
+        </section>
+
         {/* Recent registrations */}
-        <section className="min-w-0" aria-labelledby="recent-t">
+        <section className="min-w-0 lg:col-span-2" aria-labelledby="recent-t">
           <Card className="h-full p-4">
             <h2
               id="recent-t"
@@ -193,21 +300,6 @@ export function AdminDashboardView({
               </ul>
             )}
           </Card>
-        </section>
-
-        {/* 6-month trend — wider now that it's one of two context cards */}
-        <section className="min-w-0 lg:col-span-2" aria-labelledby="trend-t">
-          <ChartCard
-            title="Registrations — last 6 months"
-            summary={`Registrations by month: ${data.trend
-              .map((t) => `${t.month} ${t.count}`)
-              .join(", ")}.`}
-            headers={["Month", "Registrations"]}
-            rows={data.trend.map((t) => [t.month, t.count])}
-            height={160}
-          >
-            <BarChartV data={trend} />
-          </ChartCard>
         </section>
       </div>
     </div>

@@ -9,7 +9,7 @@ import {
   DIRECTORY_PAGE_SIZE,
   loadDirectorySlice,
 } from "@/server/services/alumni-directory";
-import type { SearchParams } from "@/lib/list-params";
+import { firstParam, type SearchParams } from "@/lib/list-params";
 
 export const metadata: Metadata = { title: "Admin Dashboard" };
 
@@ -43,6 +43,7 @@ export default async function AdminDashboardPage({
         <Suspense>
           <AlumniDirectoryView
             pathname="/admin"
+            compact={firstParam(sp.density) === "compact"}
             tab={slice.tab}
             counts={slice.counts}
             params={sp}

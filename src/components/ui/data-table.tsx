@@ -38,12 +38,15 @@ export function DataTable<T extends { id: string | number }>({
   caption,
   empty,
   className,
+  compact = false,
 }: {
   columns: DataTableColumn<T>[];
   rows: T[];
   caption?: string;
   empty?: React.ReactNode;
   className?: string;
+  /** Density toggle — tighter rows for scanning. */
+  compact?: boolean;
 }) {
   if (rows.length === 0) {
     return <>{empty}</>;
@@ -74,14 +77,25 @@ export function DataTable<T extends { id: string | number }>({
         ))}
       </ul>
 
-      {/* Real table — scrolls inside its own container */}
-      <div className="hidden overflow-x-auto rounded-lg border sm:block">
+      {/* Real table — its own scroll container on both axes, so the header
+          sticks while the page below scrolls (sticky needs a true scroller —
+          overflow-x:auto alone turns into one, which is why thead sticky
+          fails inside most table wrappers). */}
+      <div className="hidden max-h-[72vh] overflow-auto rounded-lg border sm:block">
         <Table>
           {caption ? <TableCaption>{caption}</TableCaption> : null}
           <TableHeader>
             <TableRow>
               {columns.map((col) => (
-                <TableHead key={col.key} className={col.className} scope="col">
+                <TableHead
+                  key={col.key}
+                  className={cn(
+                    "sticky top-0 z-10 bg-card",
+                    compact ? "h-8" : undefined,
+                    col.className,
+                  )}
+                  scope="col"
+                >
                   {col.header}
                 </TableHead>
               ))}
@@ -91,7 +105,13 @@ export function DataTable<T extends { id: string | number }>({
             {rows.map((row) => (
               <TableRow key={row.id}>
                 {columns.map((col) => (
-                  <TableCell key={col.key} className={col.className}>
+                  <TableCell
+                    key={col.key}
+                    className={cn(
+                      compact ? "py-1.5 text-xs" : undefined,
+                      col.className,
+                    )}
+                  >
                     {col.cell(row)}
                   </TableCell>
                 ))}

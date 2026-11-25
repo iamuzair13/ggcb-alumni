@@ -13,6 +13,8 @@ export interface ChartDatum {
   label: string;
   value: number;
   hint?: string;
+  /** Semantic hue (status chips, donut slices) — overrides palette order. */
+  tone?: "primary" | "success" | "warning" | "destructive" | "accent" | "info";
 }
 
 /* ── layout math — pure, unit-tested ──────────────────────────────── */
@@ -274,18 +276,33 @@ export function LineChart({ data }: { data: ChartDatum[] }) {
 
 /* ── donut ────────────────────────────────────────────────────────── */
 
-const DONUT_COLORS = [
+const TONE_FILL = {
+  primary: "fill-primary",
+  success: "fill-success-foreground",
+  warning: "fill-warning-foreground",
+  destructive: "fill-destructive",
+  accent: "fill-accent-foreground",
+  info: "fill-info-foreground",
+} as const;
+const TONE_STROKE = {
+  primary: "stroke-primary",
+  success: "stroke-success-foreground",
+  warning: "stroke-warning-foreground",
+  destructive: "stroke-destructive",
+  accent: "stroke-accent-foreground",
+  info: "stroke-info-foreground",
+} as const;
+/** Untoned slices cycle a distinct palette (categorical, not status). */
+const DONUT_FALLBACK_FILL = [
   "fill-primary",
   "fill-success-foreground",
-  "fill-destructive",
   "fill-accent-foreground",
   "fill-info-foreground",
   "fill-muted-foreground",
 ];
-const DONUT_STROKES = [
+const DONUT_FALLBACK_STROKE = [
   "stroke-primary",
   "stroke-success-foreground",
-  "stroke-destructive",
   "stroke-accent-foreground",
   "stroke-info-foreground",
   "stroke-muted-foreground",
@@ -331,7 +348,11 @@ export function DonutChart({ data }: { data: ChartDatum[] }) {
                 strokeDasharray={`${Math.max(dash - 1.5, 0.5)} ${C}`}
                 strokeDashoffset={off}
                 transform="rotate(-90 90 90)"
-                className={DONUT_STROKES[i % DONUT_STROKES.length]}
+                className={
+                  d.tone
+                    ? TONE_STROKE[d.tone]
+                    : DONUT_FALLBACK_STROKE[i % DONUT_FALLBACK_STROKE.length]
+                }
               />
             </g>
           );
@@ -362,7 +383,9 @@ export function DonutChart({ data }: { data: ChartDatum[] }) {
             <span
               className={cn(
                 "inline-block size-3 shrink-0 rounded-sm",
-                DONUT_COLORS[i % DONUT_COLORS.length],
+                d.tone
+                  ? TONE_FILL[d.tone]
+                  : DONUT_FALLBACK_FILL[i % DONUT_FALLBACK_FILL.length],
               )}
             />
             <span className="truncate text-muted-foreground">{d.label}</span>
@@ -371,5 +394,124 @@ export function DonutChart({ data }: { data: ChartDatum[] }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+/* ── gradient area ────────────────────────────────────────────────── */
+
+export function AreaChartV({ data }: { data: ChartDatum[] }) {
+  const W = 400;
+  const H = 200;
+  const max = Math.max(1, ...data.map((d) => d.value));
+  const px = 24;
+  const step = data.length > 1 ? (W - px * 2) / (data.length - 1) : 0;
+  const y = (v: number) => H - 16 - (v / max) * (H - 40);
+  const pts = data.map((d, i) => [px + i * step, y(d.value)] as const);
+  const id = useId();
+  const shown = thinLabels(data.map((d) => d.label));
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H + 24}`}
+      className="h-full w-full"
+      role="img"
+      aria-label={`Area chart with ${data.length} points`}
+    >
+      <defs>
+        <linearGradient id={`${id}-fill`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" className="text-primary" stopOpacity={0.35} />
+          <stop offset="100%" className="text-primary" stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <polygon
+        points={`${px},${H - 8} ${pts.map((p) => `${p[0]},${p[1]}`).join(" ")} ${px + step * (data.length - 1)},${H - 8}`}
+        fill={`url(#${id}-fill)`}
+      />
+      <polyline
+        points={pts.map((p) => `${p[0]},${p[1]}`).join(" ")}
+        fill="none"
+        className="stroke-primary"
+        strokeWidth={2}
+      />
+      {data.map((d, i) => (
+        <g key={d.label} tabIndex={0} className="outline-none">
+          <title>{`${d.label}: ${d.value}`}</title>
+          <circle
+            cx={pts[i]![0]}
+            cy={pts[i]![1]}
+            r={9}
+            className="fill-transparent"
+          />
+          <circle
+            cx={pts[i]![0]}
+            cy={pts[i]![1]}
+            r={3.5}
+            className="fill-primary"
+          />
+          {shown[i] && (
+            <text
+              x={pts[i]![0]}
+              y={H + 14}
+              textAnchor="middle"
+              fontSize={9}
+              className="fill-muted-foreground"
+            >
+              {d.label}
+            </text>
+          )}
+        </g>
+      ))}
+      <line
+        x1={px}
+        y1={H - 8}
+        x2={W - px}
+        y2={H - 8}
+        className="stroke-border"
+      />
+    </svg>
+  );
+}
+
+/* ── sparkline — inline trend, no chrome ──────────────────────────── */
+
+export function Sparkline({
+  values,
+  className,
+  label = "Trend sparkline",
+}: {
+  values: number[];
+  className?: string;
+  label?: string;
+}) {
+  const W = 96;
+  const H = 28;
+  const max = Math.max(1, ...values);
+  const min = Math.min(0, ...values);
+  const range = Math.max(1, max - min);
+  const step = values.length > 1 ? W / (values.length - 1) : 0;
+  const pts = values.map(
+    (v, i) => `${i * step},${H - 4 - ((v - min) / range) * (H - 8)}`,
+  );
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className={cn("h-7 w-full", className)}
+      role="img"
+      aria-label={label}
+      aria-hidden={label === ""}
+      preserveAspectRatio="none"
+    >
+      <polyline
+        points={pts.join(" ")}
+        fill="none"
+        className="stroke-primary/60"
+        strokeWidth={1.5}
+      />
+      <circle
+        cx={(values.length - 1) * step}
+        cy={H - 4 - ((values[values.length - 1]! - min) / range) * (H - 8)}
+        r={2.5}
+        className="fill-primary"
+      />
+    </svg>
   );
 }
