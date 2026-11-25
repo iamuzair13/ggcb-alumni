@@ -31,8 +31,7 @@ import { DemoForbidden } from "@/components/demo/demo-shells";
 import { useDemo } from "@/components/demo/demo-provider";
 import { adminRouteAllowed } from "@/features/_shared/personas";
 import { RejectReasonDialog } from "@/features/alumni-directory/views/reject-reason-dialog";
-import type { AdminDashboardData } from "../types";
-import type { Alumnus } from "@/features/alumni-directory/types";
+import type { AdminDashboardData, DashboardAlumnus } from "../types";
 
 const DEMO_BASE = "/design/demo";
 
@@ -42,7 +41,9 @@ export function AdminDashboardView({ data }: { data: AdminDashboardData }) {
   const { persona, simulate } = useDemo();
   const [decisions, setDecisions] = useState<Record<string, Decision>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [rejectTarget, setRejectTarget] = useState<Alumnus | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<DashboardAlumnus | null>(
+    null,
+  );
 
   if (!adminRouteAllowed(persona, "/admin")) return <DemoForbidden />;
   const canMutate = persona.role === "admin" || persona.role === "superadmin";
@@ -61,7 +62,7 @@ export function AdminDashboardView({ data }: { data: AdminDashboardData }) {
   };
   const queue = data.pendingQueue.filter((a) => !decisions[a.id]);
 
-  async function approve(a: Alumnus) {
+  async function approve(a: DashboardAlumnus) {
     setBusyId(a.id);
     await simulate(null, 500);
     setDecisions((d) => ({ ...d, [a.id]: { status: "verified" } }));
@@ -69,7 +70,7 @@ export function AdminDashboardView({ data }: { data: AdminDashboardData }) {
     toast.success(`${a.fullName} approved`);
   }
 
-  async function reject(a: Alumnus, reason: string) {
+  async function reject(a: DashboardAlumnus, reason: string) {
     setBusyId(a.id);
     await simulate(null, 550);
     setDecisions((d) => ({ ...d, [a.id]: { status: "rejected", reason } }));

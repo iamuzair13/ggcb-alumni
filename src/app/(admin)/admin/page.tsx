@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import { LayoutDashboard } from "lucide-react";
 
-import { PlaceholderPage } from "@/components/shared/placeholder-page";
+import { AdminDashboardView } from "@/components/admin/dashboard-view";
+import { requireStaff } from "@/server/auth/session";
+import { loadAdminDashboard } from "@/server/services/admin-dashboard";
 
 export const metadata: Metadata = { title: "Admin Dashboard" };
 
-export default function AdminDashboardPage() {
-  return (
-    <PlaceholderPage
-      title="Dashboard"
-      description="Totals, registration trends, and alumni breakdowns by department and year."
-      icon={LayoutDashboard}
-    />
-  );
+/**
+ * Admin dashboard — all staff read the same aggregate surface. Approve/reject
+ * happens in the directory; this page only reports.
+ */
+export default async function AdminDashboardPage() {
+  await requireStaff();
+  const data = await loadAdminDashboard();
+  return <AdminDashboardView data={data} />;
 }

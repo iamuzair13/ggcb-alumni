@@ -46,6 +46,7 @@ export default function DemoAdminDashboardPage() {
       verified: byStatus("verified"),
       underApproval: byStatus("under_approval"),
       rejected: byStatus("rejected"),
+      featured: world.alumni.filter((a) => a.isFeatured).length,
       ecardsIssued: world.ecards.length,
       pendingChangeRequests: world.changeRequests.filter(
         (r) => r.status === "pending",
