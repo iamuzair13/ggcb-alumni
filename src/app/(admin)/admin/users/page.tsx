@@ -15,6 +15,9 @@ export const metadata: Metadata = { title: "Staff users" };
 const ROLE_ALLOW = ["superadmin", "admin", "viewer", "alumni"] as const;
 const STATUS_ALLOW = ["active", "inactive", "invited"] as const;
 
+// Reads live data in the page body — allowed to block (per-segment opt-out).
+export const instant = false;
+
 /**
  * Staff users — superadmin only. Guard outside Suspense (admin layout's
  * `instant = false` marks the whole area blocking/dynamic).

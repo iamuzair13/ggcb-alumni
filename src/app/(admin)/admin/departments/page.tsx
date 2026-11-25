@@ -11,6 +11,9 @@ import { parseQuery } from "@/lib/list-params";
 
 export const metadata: Metadata = { title: "Departments" };
 
+// Reads live data in the page body — allowed to block (per-segment opt-out).
+export const instant = false;
+
 /**
  * Departments — all staff read; only superadmin/admin write (enforced in
  * the actions). Viewer gets the same list with controls removed.
