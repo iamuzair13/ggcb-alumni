@@ -75,11 +75,11 @@ export function ListToolbar({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {searchPlaceholder ? (
           <form
             role="search"
-            className="relative flex-1"
+            className="relative flex-1 sm:min-w-56"
             onSubmit={(e) => {
               e.preventDefault();
               push({ q: q.trim() || undefined });

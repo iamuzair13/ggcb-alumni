@@ -112,6 +112,7 @@ export default function AdminAlumniScreensPreview() {
             Verified tab — populated register
           </h2>
           <AlumniDirectoryView
+            pathname="/design/screens/admin-alumni"
             tab="verified"
             counts={POPULATED_COUNTS}
             params={{}}
@@ -130,6 +131,7 @@ export default function AdminAlumniScreensPreview() {
             Change-requests tab — pending first
           </h2>
           <AlumniDirectoryView
+            pathname="/design/screens/admin-alumni"
             tab="requests"
             counts={POPULATED_COUNTS}
             params={{ tab: "requests" }}
@@ -148,6 +150,7 @@ export default function AdminAlumniScreensPreview() {
             Empty register — what a fresh deployment looks like
           </h2>
           <AlumniDirectoryView
+            pathname="/design/screens/admin-alumni"
             tab="verified"
             counts={EMPTY_COUNTS}
             params={{}}

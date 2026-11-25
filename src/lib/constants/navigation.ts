@@ -8,7 +8,6 @@ import {
   Newspaper,
   ScrollText,
   UserRound,
-  Users,
   UsersRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -27,10 +26,10 @@ export const ALUMNI_NAV_ITEMS: NavItem[] = [
   { title: "Stories", href: "/stories", icon: Newspaper },
 ];
 
-/** Admin-area IA — all eight placeholder sections (context.md §4). */
+/** Admin-area IA — the register merged into Dashboard; remaining
+    placeholder sections still have their own items (context.md §4). */
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { title: "Alumni", href: "/admin/alumni", icon: Users },
   { title: "Departments", href: "/admin/departments", icon: Building2 },
   { title: "Content", href: "/admin/content", icon: FileText },
   {

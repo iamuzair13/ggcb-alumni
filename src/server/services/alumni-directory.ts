@@ -7,6 +7,14 @@ import "server-only";
  * verification must issue an E-card in the same transaction (§4.5).
  */
 import { sql } from "@/server/db";
+import {
+  clampPage,
+  firstParam,
+  parseEnum,
+  parsePage,
+  parseQuery,
+  type SearchParams,
+} from "@/lib/list-params";
 import type { Datasource, VerifyStatus } from "@/lib/constants/statuses";
 
 export const DIRECTORY_PAGE_SIZE = 15;
@@ -273,5 +281,106 @@ export async function listChangeRequests(opts: {
       reviewedAt: r.reviewed_at?.toISOString() ?? null,
     })),
     total: countRow.n,
+  };
+}
+
+/* ── page-level orchestration (parse → counts/options → list + clamp) ── */
+
+const GENDERS = ["male", "female", "other"] as const;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export interface DirectorySlice {
+  tab: DirectoryTab;
+  sort: DirectorySort;
+  counts: DirectoryTabCounts;
+  options: DirectoryFilterOptions;
+  rows: DirectoryRow[];
+  requests: ChangeRequestRow[];
+  total: number;
+  page: number;
+  /** Any narrowing (q or a filter) is active — changes empty-state copy. */
+  narrowed: boolean;
+}
+
+/**
+ * The whole URL-driven read: parse params (bad input → defaults, never
+ * 500), then counts+options concurrently, then the tab's list with the
+ * page re-clamped against the real total (deep links may overshoot).
+ */
+export async function loadDirectorySlice(
+  sp: SearchParams,
+): Promise<DirectorySlice> {
+  const tab = parseEnum(sp.tab, DIRECTORY_TABS) ?? "verified";
+  const q = parseQuery(sp.q);
+  const sort = parseEnum(sp.sort, DIRECTORY_SORTS) ?? "name";
+  const deptParam = firstParam(sp.dept);
+  const yearParam = Number.parseInt(firstParam(sp.year) ?? "", 10);
+  const filters = {
+    q,
+    departmentId: deptParam && UUID_RE.test(deptParam) ? deptParam : undefined,
+    passingYear:
+      Number.isFinite(yearParam) && yearParam >= 1950 && yearParam <= 2100
+        ? yearParam
+        : undefined,
+    city: parseQuery(sp.city),
+    district: parseQuery(sp.district),
+    sector: parseQuery(sp.sector),
+    gender: parseEnum(sp.gender, GENDERS),
+    featured: firstParam(sp.featured) === "1" ? true : undefined,
+  };
+  const narrowed = Object.values(filters).some((v) => v !== undefined);
+
+  const [counts, options] = await Promise.all([
+    directoryTabCounts(),
+    directoryFilterOptions(),
+  ]);
+
+  let rows: DirectoryRow[] = [];
+  let requests: ChangeRequestRow[] = [];
+  let total = 0;
+
+  if (tab === "requests") {
+    const first = await listChangeRequests({ q, page: parsePage(sp.page) });
+    const page = clampPage(
+      parsePage(sp.page),
+      first.total,
+      DIRECTORY_PAGE_SIZE,
+    );
+    const data =
+      page === parsePage(sp.page)
+        ? first
+        : await listChangeRequests({ q, page });
+    requests = data.rows;
+    total = data.total;
+  } else {
+    const args = {
+      verifyStatus: tab,
+      ...filters,
+      sort,
+      page: parsePage(sp.page),
+    };
+    const first = await listAlumni(args);
+    const page = clampPage(
+      parsePage(sp.page),
+      first.total,
+      DIRECTORY_PAGE_SIZE,
+    );
+    const data =
+      page === args.page ? first : await listAlumni({ ...args, page });
+    rows = data.rows;
+    total = data.total;
+  }
+
+  return {
+    tab,
+    sort,
+    counts,
+    options,
+    rows,
+    requests,
+    total,
+    page: clampPage(parsePage(sp.page), total, DIRECTORY_PAGE_SIZE),
+    narrowed,
   };
 }

@@ -50,10 +50,11 @@ const EMPTY: DirectoryTabCounts = {
   pendingChangeRequests: 0,
 };
 
-describe("AlumniDirectoryView (real /admin/alumni surface)", () => {
+describe("AlumniDirectoryView (real /admin register surface)", () => {
   it("renders tab counts, the row and sort links for a populated tab", () => {
     render(
       <AlumniDirectoryView
+        pathname="/admin"
         tab="verified"
         counts={COUNTS}
         params={{}}
@@ -73,7 +74,7 @@ describe("AlumniDirectoryView (real /admin/alumni surface)", () => {
     expect(screen.getByText("104")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /under approval/i }),
-    ).toHaveAttribute("href", "/admin/alumni?tab=under_approval");
+    ).toHaveAttribute("href", "/admin?tab=under_approval");
     // Sortable header writes the URL.
     expect(
       screen.getAllByRole("link", { name: /sort by name/i })[0],
@@ -87,6 +88,7 @@ describe("AlumniDirectoryView (real /admin/alumni surface)", () => {
   it("points an empty register at the import flow", () => {
     render(
       <AlumniDirectoryView
+        pathname="/admin"
         tab="verified"
         counts={EMPTY}
         params={{}}
@@ -109,6 +111,7 @@ describe("AlumniDirectoryView (real /admin/alumni surface)", () => {
   it("renders the change-request queue with pending-first rows", () => {
     render(
       <AlumniDirectoryView
+        pathname="/admin"
         tab="requests"
         counts={COUNTS}
         params={{ tab: "requests" }}

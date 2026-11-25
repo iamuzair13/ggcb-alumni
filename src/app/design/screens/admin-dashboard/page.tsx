@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { AdminDashboardView } from "@/components/admin/dashboard-view";
+import { AlumniDirectoryView } from "@/components/admin/alumni-directory-view";
 import type { AdminDashboardData } from "@/features/admin-dashboard/types";
+import type {
+  DirectoryFilterOptions,
+  DirectoryTabCounts,
+} from "@/server/services/alumni-directory";
 
 export const metadata: Metadata = {
   title: "Preview — admin dashboard",
@@ -100,6 +106,42 @@ const EMPTY: AdminDashboardData = {
   ],
 };
 
+const DIR_COUNTS: DirectoryTabCounts = {
+  verified: 104,
+  underApproval: 17,
+  rejected: 7,
+  pendingChangeRequests: 4,
+};
+
+const DIR_OPTIONS: DirectoryFilterOptions = {
+  departments: [
+    { id: "00000000-0000-0000-0000-000000000011", name: "Sample CS" },
+  ],
+  passingYears: [2023],
+  cities: ["Sample Burewala"],
+  districts: [],
+  sectors: [],
+};
+
+const PREVIEW_REGISTER = (
+  <Suspense>
+    <AlumniDirectoryView
+      pathname="/design/screens/admin-dashboard"
+      tab="verified"
+      counts={DIR_COUNTS}
+      params={{}}
+      options={DIR_OPTIONS}
+      rows={[]}
+      requests={[]}
+      total={0}
+      page={1}
+      pageSize={15}
+      sort="name"
+      narrowed={false}
+    />
+  </Suspense>
+);
+
 /** Dev-only preview of /admin states (populated + empty register). */
 export default function AdminDashboardScreensPreview() {
   if (process.env.NODE_ENV === "production") notFound();
@@ -107,15 +149,15 @@ export default function AdminDashboardScreensPreview() {
     <main className="mx-auto w-full max-w-6xl min-w-0 space-y-12 px-4 py-10">
       <section className="space-y-6">
         <h2 className="font-mono text-xs text-muted-foreground">
-          Populated register — queue + recent + trend
+          Merged /admin — stats + register + context
         </h2>
-        <AdminDashboardView data={POPULATED} />
+        <AdminDashboardView data={POPULATED} register={PREVIEW_REGISTER} />
       </section>
       <section className="space-y-6">
         <h2 className="font-mono text-xs text-muted-foreground">
           Empty register — what a fresh deployment looks like
         </h2>
-        <AdminDashboardView data={EMPTY} />
+        <AdminDashboardView data={EMPTY} register={PREVIEW_REGISTER} />
       </section>
     </main>
   );

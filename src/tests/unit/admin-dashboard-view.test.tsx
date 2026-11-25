@@ -55,17 +55,25 @@ const EMPTY: AdminDashboardData = {
   recentRegistrations: [],
 };
 
-describe("AdminDashboardView (real /admin surface)", () => {
-  it("renders KPIs, queue rows and real route links when populated", () => {
-    render(<AdminDashboardView data={POPULATED} />);
-    expect(screen.getByText("Ayesha Khan")).toBeInTheDocument();
+const REGISTER = <div data-testid="register-slot">register</div>;
+
+describe("AdminDashboardView (merged /admin surface)", () => {
+  it("renders KPI links, the register slot and context cards", () => {
+    render(<AdminDashboardView data={POPULATED} register={REGISTER} />);
+    // Every KPI is a filter into the register below.
+    expect(
+      screen.getByRole("link", { name: /under approval/i }),
+    ).toHaveAttribute("href", "/admin?tab=under_approval");
+    expect(
+      screen.getByRole("link", { name: /pending change requests/i }),
+    ).toHaveAttribute("href", "/admin?tab=requests");
+    expect(
+      screen.getAllByRole("link", { name: /featured alumni/i })[0],
+    ).toHaveAttribute("href", "/admin?featured=1");
+    // The directory mount point.
+    expect(screen.getByTestId("register-slot")).toBeInTheDocument();
+    // Glance cards still render.
     expect(screen.getByText("Hassan Raza")).toBeInTheDocument();
-    expect(
-      screen.getAllByText("Featured alumni").length,
-    ).toBeGreaterThanOrEqual(1);
-    expect(
-      screen.getByRole("link", { name: /open directory/i }),
-    ).toHaveAttribute("href", "/admin/alumni?tab=under_approval");
     // Read-only: no approve/reject affordances on the dashboard itself.
     expect(
       screen.queryByRole("button", { name: /approve/i }),
@@ -73,8 +81,7 @@ describe("AdminDashboardView (real /admin surface)", () => {
   });
 
   it("points an empty register at the import flow", () => {
-    render(<AdminDashboardView data={EMPTY} />);
-    expect(screen.getByText(/queue is clear/i)).toBeInTheDocument();
+    render(<AdminDashboardView data={EMPTY} register={REGISTER} />);
     expect(
       screen.getByRole("link", { name: /import the alumni list/i }),
     ).toHaveAttribute("href", "/admin/import-export");

@@ -42,8 +42,6 @@ import type {
   DirectoryTabCounts,
 } from "@/server/services/alumni-directory";
 
-const PATHNAME = "/admin/alumni";
-
 const TABS: {
   id: DirectoryTab;
   label: string;
@@ -70,10 +68,12 @@ function TabStrip({
   tab,
   counts,
   params,
+  pathname,
 }: {
   tab: DirectoryTab;
   counts: DirectoryTabCounts;
   params: SearchParams;
+  pathname: string;
 }) {
   return (
     <nav aria-label="Alumni record sets">
@@ -86,7 +86,7 @@ function TabStrip({
             return (
               <li key={t.id} className="shrink-0">
                 <Link
-                  href={buildListHref(PATHNAME, params, {
+                  href={buildListHref(pathname, params, {
                     tab: t.id === "verified" ? undefined : t.id,
                     page: undefined,
                   })}
@@ -127,12 +127,14 @@ function SortHeader({
   next,
   params,
   tab,
+  pathname,
 }: {
   label: string;
   sort: DirectorySort;
   next: DirectorySort;
   params: SearchParams;
   tab: DirectoryTab;
+  pathname: string;
 }) {
   const active = sort === next || (next === "name" && sort === "name_desc");
   const toggled =
@@ -143,7 +145,7 @@ function SortHeader({
         : next;
   return (
     <Link
-      href={buildListHref(PATHNAME, params, {
+      href={buildListHref(pathname, params, {
         tab: tab === "verified" ? undefined : tab,
         sort: toggled === "name" ? undefined : toggled,
         page: undefined,
@@ -220,6 +222,7 @@ export function AlumniDirectoryView({
   pageSize,
   sort,
   narrowed,
+  pathname,
 }: {
   tab: DirectoryTab;
   counts: DirectoryTabCounts;
@@ -233,6 +236,8 @@ export function AlumniDirectoryView({
   sort: DirectorySort;
   /** Any narrowing (q or a filter) is active — changes empty-state copy. */
   narrowed: boolean;
+  /** Route the list lives under — all generated hrefs stay local. */
+  pathname: string;
 }) {
   const registerEmpty =
     counts.verified + counts.underApproval + counts.rejected === 0;
@@ -292,6 +297,7 @@ export function AlumniDirectoryView({
           next="name"
           params={params}
           tab={tab}
+          pathname={pathname}
         />
       ),
       cell: (a) => (
@@ -321,6 +327,7 @@ export function AlumniDirectoryView({
           next="year"
           params={params}
           tab={tab}
+          pathname={pathname}
         />
       ),
       cell: (a) => <span className="tnum">{a.passingYear ?? "—"}</span>,
@@ -345,6 +352,7 @@ export function AlumniDirectoryView({
           next="recent"
           params={params}
           tab={tab}
+          pathname={pathname}
         />
       ),
       cell: (a) => <span className="tnum">{fmtDate(a.createdAt)}</span>,
@@ -435,7 +443,7 @@ export function AlumniDirectoryView({
 
   return (
     <div className="space-y-4">
-      <TabStrip tab={tab} counts={counts} params={params} />
+      <TabStrip tab={tab} counts={counts} params={params} pathname={pathname} />
 
       <ListToolbar
         searchPlaceholder={
@@ -477,7 +485,7 @@ export function AlumniDirectoryView({
       )}
 
       <Pager
-        pathname={PATHNAME}
+        pathname={pathname}
         params={params}
         total={total}
         page={page}
