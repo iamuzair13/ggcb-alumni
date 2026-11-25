@@ -91,6 +91,9 @@ export function ListToolbar({
             />
             <Input
               type="search"
+              name="q"
+              autoComplete="off"
+              spellCheck={false}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={searchPlaceholder}

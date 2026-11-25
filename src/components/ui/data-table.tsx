@@ -12,6 +12,12 @@ import {
 export interface DataTableColumn<T> {
   key: string;
   header: React.ReactNode;
+  /**
+   * Plain-text fallback for the mobile card's <dt> when `header` is
+   * interactive (e.g. a sort link) — an interactive element doesn't belong
+   * inside a term, and it would repeat once per card.
+   */
+  headerText?: string;
   cell: (row: T) => React.ReactNode;
   /** Class applied to both head and body cells (e.g. "text-right tnum"). */
   className?: string;
@@ -56,7 +62,7 @@ export function DataTable<T extends { id: string | number }>({
               {columns.map((col) => (
                 <div key={col.key} className="contents">
                   <dt className="font-medium text-muted-foreground">
-                    {col.header}
+                    {col.headerText ?? col.header}
                   </dt>
                   <dd className={cn("min-w-0", col.className)}>
                     {col.cell(row)}
@@ -75,7 +81,7 @@ export function DataTable<T extends { id: string | number }>({
           <TableHeader>
             <TableRow>
               {columns.map((col) => (
-                <TableHead key={col.key} className={col.className}>
+                <TableHead key={col.key} className={col.className} scope="col">
                   {col.header}
                 </TableHead>
               ))}

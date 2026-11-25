@@ -290,6 +290,7 @@ export function AlumniDirectoryView({
   const alumniColumns: DataTableColumn<DirectoryRow>[] = [
     {
       key: "name",
+      headerText: "Name",
       header: (
         <SortHeader
           label="Name"
@@ -306,6 +307,7 @@ export function AlumniDirectoryView({
           {a.isFeatured ? (
             <CircleStar
               className="size-3.5 shrink-0 text-primary"
+              role="img"
               aria-label="Featured alumnus"
             />
           ) : null}
@@ -320,6 +322,7 @@ export function AlumniDirectoryView({
     { key: "dept", header: "Department", cell: (a) => a.departmentName },
     {
       key: "year",
+      headerText: "Year",
       header: (
         <SortHeader
           label="Year"
@@ -345,6 +348,7 @@ export function AlumniDirectoryView({
     },
     {
       key: "added",
+      headerText: "Added",
       header: (
         <SortHeader
           label="Added"
@@ -448,8 +452,8 @@ export function AlumniDirectoryView({
       <ListToolbar
         searchPlaceholder={
           tab === "requests"
-            ? "Search name or roll no."
-            : "Search name, roll no. or email"
+            ? "Search name or roll no.…"
+            : "Search name, roll no. or email…"
         }
         filters={tab === "requests" ? [] : toolbarFilters}
       />
