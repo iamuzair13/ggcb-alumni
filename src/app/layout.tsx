@@ -57,7 +57,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </Script>
         {children}
         <ThemeFab />
-        {children}
         <Toaster position="bottom-right" closeButton />
       </body>
     </html>
