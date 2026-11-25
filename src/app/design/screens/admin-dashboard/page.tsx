@@ -104,7 +104,7 @@ const EMPTY: AdminDashboardData = {
 export default function AdminDashboardScreensPreview() {
   if (process.env.NODE_ENV === "production") notFound();
   return (
-    <main className="mx-auto max-w-6xl space-y-12 px-4 py-10">
+    <main className="mx-auto w-full max-w-6xl min-w-0 space-y-12 px-4 py-10">
       <section className="space-y-6">
         <h2 className="font-mono text-xs text-muted-foreground">
           Populated register — queue + recent + trend

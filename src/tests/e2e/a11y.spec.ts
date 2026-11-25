@@ -13,6 +13,7 @@ const pages = [
   "/design/screens/users",
   "/design/screens/departments",
   "/design/screens/admin-dashboard",
+  "/design/screens/admin-alumni",
   "/dashboard",
   "/admin",
   // Phase 6 — real pages + the whole clickable prototype (dev-only)

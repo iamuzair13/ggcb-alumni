@@ -52,12 +52,9 @@ export function Pager({
               />
             </PaginationItem>
             <PaginationItem>
-              <PaginationLink
-                href="#"
-                isActive
-                aria-current="page"
-                onClick={(e) => e.preventDefault()}
-              >
+              {/* Self-link: the active page needs no handler — and an
+                  onClick can't cross the RSC→client boundary anyway. */}
+              <PaginationLink href={href(page)} isActive aria-current="page">
                 {page}
               </PaginationLink>
             </PaginationItem>
