@@ -4,7 +4,6 @@ import Link from "next/link";
 import { AdminBreadcrumb } from "@/components/layout/admin-breadcrumb";
 import { AdminMobileNav, AdminSidebar } from "@/components/layout/admin-nav";
 import { AdminSearch } from "@/components/layout/admin-search";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Logo } from "@/components/shared/logo";
 import { SkipLink } from "@/components/shared/skip-link";
@@ -65,7 +64,6 @@ function AdminShell({
           <div className="flex-1" />
           <div className="flex items-center gap-2">
             <AdminSearch />
-            <ThemeToggle />
             <div className="hidden items-center gap-3 sm:flex">
               <span className="text-right leading-tight">
                 <span className="block text-xs font-medium">{user.name}</span>

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Public_Sans, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
 
+import { ThemeFab } from "@/components/layout/theme-toggle";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -47,13 +48,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         {/* Pre-paint theme apply — beforeInteractive hoists into <head> and
             runs before hydration without a raw <script> in the React tree
-            (the dev-mode warning raw tags trigger). */}
+            (the dev-mode warning raw tags trigger). Light is the default —
+            dark only if the user explicitly chose it. */}
         <Script id="theme-bootstrap" strategy="beforeInteractive">
           {
-            "try{var t=localStorage.getItem('ggcb-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}"
+            "try{if(localStorage.getItem('ggcb-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}"
           }
         </Script>
         {children}
+        <ThemeFab />
         {children}
         <Toaster position="bottom-right" closeButton />
       </body>
