@@ -18,11 +18,37 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { AdminDashboardData } from "@/features/admin-dashboard/types";
 
+type LedgerTone =
+  "ink" | "primary" | "success" | "warning" | "destructive" | "accent" | "info";
+
+/** Index-tab hue per cell — a real register's colored thumb tabs. */
+const TONE_TAB: Record<LedgerTone, string> = {
+  ink: "border-t-border",
+  primary: "border-t-primary",
+  success: "border-t-success-foreground",
+  warning: "border-t-warning-foreground",
+  destructive: "border-t-destructive",
+  accent: "border-t-accent-foreground",
+  info: "border-t-info-foreground",
+};
+
+/** Attention cells: full status tint + ink figure. */
+const TONE_ACTIVE: Record<LedgerTone, string> = {
+  ink: "",
+  primary: "bg-primary/5 text-primary",
+  success: "bg-success text-success-foreground",
+  warning: "bg-warning text-warning-foreground",
+  destructive: "bg-destructive/10 text-destructive",
+  accent: "bg-accent text-accent-foreground",
+  info: "bg-info text-info-foreground",
+};
+
 interface LedgerCell {
   label: string;
   value: number;
   href: string;
-  /** Non-zero value should pull the eye — attention state. */
+  tone: LedgerTone;
+  /** Non-zero value should pull the eye — full status tint. */
   accent?: boolean;
 }
 
@@ -38,24 +64,42 @@ export function AdminDashboardView({
   const trend = data.trend.map((t) => ({ label: t.month, value: t.count }));
 
   const ledger: LedgerCell[] = [
-    { label: "Total alumni", value: kpis.totalAlumni, href: "/admin" },
-    { label: "Verified", value: kpis.verified, href: "/admin?tab=verified" },
+    {
+      label: "Total alumni",
+      value: kpis.totalAlumni,
+      href: "/admin",
+      tone: "primary",
+    },
+    {
+      label: "Verified",
+      value: kpis.verified,
+      href: "/admin?tab=verified",
+      tone: "success",
+    },
     {
       label: "Under approval",
       value: kpis.underApproval,
       href: "/admin?tab=under_approval",
+      tone: "warning",
       accent: kpis.underApproval > 0,
     },
-    { label: "Rejected", value: kpis.rejected, href: "/admin?tab=rejected" },
+    {
+      label: "Rejected",
+      value: kpis.rejected,
+      href: "/admin?tab=rejected",
+      tone: "destructive",
+    },
     {
       label: "Featured alumni",
       value: kpis.featured,
       href: "/admin?featured=1",
+      tone: "accent",
     },
     {
       label: "Pending change requests",
       value: kpis.pendingChangeRequests,
       href: "/admin?tab=requests",
+      tone: "info",
       accent: kpis.pendingChangeRequests > 0,
     },
   ];
@@ -78,19 +122,15 @@ export function AdminDashboardView({
               <Link
                 href={c.href}
                 className={cn(
-                  "flex h-full flex-col justify-between gap-1 p-4 transition-colors outline-none hover:bg-accent/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset",
-                  c.accent && "bg-primary/[0.04]",
+                  "flex h-full flex-col justify-between gap-1 border-t-[3px] p-4 transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset",
+                  TONE_TAB[c.tone],
+                  c.accent ? TONE_ACTIVE[c.tone] : "hover:bg-accent/50",
                 )}
               >
                 <span className="text-xs font-medium text-muted-foreground">
                   {c.label}
                 </span>
-                <span
-                  className={cn(
-                    "tnum font-heading text-2xl font-semibold",
-                    c.accent && "text-primary",
-                  )}
-                >
+                <span className="tnum font-heading text-2xl font-semibold">
                   {c.value}
                 </span>
               </Link>
