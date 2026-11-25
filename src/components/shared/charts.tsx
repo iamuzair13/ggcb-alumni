@@ -135,7 +135,8 @@ export function BarChartH({ data }: { data: ChartDatum[] }) {
               width={Math.max(w, 2)}
               height={22}
               rx={3}
-              className="fill-primary/80"
+              className="animate-chart-grow fill-primary/80"
+              style={{ animationDelay: `${i * 60}ms` }}
             />
             <text
               x={146 + w}
@@ -181,7 +182,8 @@ export function BarChartV({ data }: { data: ChartDatum[] }) {
               width={bw}
               height={Math.max(h, 1)}
               rx={3}
-              className="fill-primary/80"
+              className="animate-chart-grow-y fill-primary/80"
+              style={{ animationDelay: `${i * 50}ms` }}
             />
             <text
               x={x + bw / 2}
@@ -425,11 +427,12 @@ export function AreaChartV({ data }: { data: ChartDatum[] }) {
       <polygon
         points={`${px},${H - 8} ${pts.map((p) => `${p[0]},${p[1]}`).join(" ")} ${px + step * (data.length - 1)},${H - 8}`}
         fill={`url(#${id}-fill)`}
+        className="animate-chart-fade"
       />
       <polyline
         points={pts.map((p) => `${p[0]},${p[1]}`).join(" ")}
         fill="none"
-        className="stroke-primary"
+        className="animate-chart-draw stroke-primary"
         strokeWidth={2}
       />
       {data.map((d, i) => (

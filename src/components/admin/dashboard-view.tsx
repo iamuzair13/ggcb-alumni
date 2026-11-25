@@ -14,6 +14,7 @@ import { ArrowDown, ArrowUp, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
 import { AreaChartV, BarChartH, ChartCard } from "@/components/shared/charts";
+import { CountUp } from "@/components/shared/count-up";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
@@ -45,6 +46,17 @@ const TONE_ACTIVE: Record<LedgerTone, string> = {
   destructive: "bg-destructive/10 text-destructive",
   accent: "bg-accent text-accent-foreground",
   info: "bg-info text-info-foreground",
+};
+
+/** Idle-cell hover: the cell's own hue washes in. */
+const TONE_HOVER: Record<LedgerTone, string> = {
+  ink: "hover:bg-accent/50",
+  primary: "hover:bg-primary/[0.07]",
+  success: "hover:bg-success",
+  warning: "hover:bg-warning",
+  destructive: "hover:bg-destructive/10",
+  accent: "hover:bg-accent",
+  info: "hover:bg-info",
 };
 
 interface LedgerCell {
@@ -126,21 +138,25 @@ export function AdminDashboardView({
           the numbers are the register's navigation. */}
       <nav aria-label="Register summary">
         <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-3 xl:grid-cols-6">
-          {ledger.map((c) => (
-            <li key={c.label} className="bg-card">
+          {ledger.map((c, i) => (
+            <li
+              key={c.label}
+              className="animate-reveal bg-card"
+              style={{ animationDelay: `${i * 45}ms` }}
+            >
               <Link
                 href={c.href}
                 className={cn(
                   "flex h-full flex-col justify-between gap-1 border-t-[3px] p-4 transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset",
                   TONE_TAB[c.tone],
-                  c.accent ? TONE_ACTIVE[c.tone] : "hover:bg-accent/50",
+                  c.accent ? TONE_ACTIVE[c.tone] : TONE_HOVER[c.tone],
                 )}
               >
                 <span className="text-xs font-medium text-muted-foreground">
                   {c.label}
                 </span>
                 <span className="tnum font-heading text-2xl font-semibold">
-                  {c.value}
+                  <CountUp value={c.value} />
                 </span>
                 {c.delta?.meaningful ? (
                   <span
@@ -226,7 +242,14 @@ export function AdminDashboardView({
                         {a.departmentName}
                       </p>
                     </div>
-                    <Badge variant="secondary" className="shrink-0 capitalize">
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "shrink-0 capitalize",
+                        a.datasource === "registration" &&
+                          "bg-primary/10 text-primary",
+                      )}
+                    >
                       {a.datasource}
                     </Badge>
                   </li>

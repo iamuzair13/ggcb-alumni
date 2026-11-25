@@ -371,7 +371,13 @@ export function AlumniDirectoryView({
       key: "source",
       header: "Source",
       cell: (a) => (
-        <Badge variant="secondary" className="capitalize">
+        <Badge
+          variant="secondary"
+          className={cn(
+            "capitalize",
+            a.datasource === "registration" && "bg-primary/10 text-primary",
+          )}
+        >
           {a.datasource}
         </Badge>
       ),
