@@ -1,15 +1,14 @@
 "use client";
 
 /**
- * Registration form — every alumni field, stepped like turning pages of the
- * register: one entry at a time instead of one long scroll. Required fields
- * carry the schema's NOT NULL, optional fields are marked "(optional)".
- * The submit seam is a stub until the real registration action lands.
+ * Registration form — rebuilt on the 21st.dev RegistrationStepper: a
+ * vertical accordion rail inside .reg-scope, an identity independent of the
+ * evergreen ledger theme. Same draft/validation/submit seam as before.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { InlineAlert } from "@/components/shared/inline-alert";
 import { PasswordField } from "@/components/shared/password-field";
+import { RegistrationStepper } from "@/components/ui/registration-stepper";
 import {
   registerFormSchema,
   type RegisterFormDraft,
@@ -99,10 +99,19 @@ function fieldErrors(draft: Draft): {
 }
 
 /** The register's own pages — one entry per step. */
-const STEPS: { title: string; fields: (keyof Draft)[] }[] = [
-  { title: "About you", fields: ["fullName", "rollNumber", "gender"] },
+const STEPS: {
+  title: string;
+  description: string;
+  fields: (keyof Draft)[];
+}[] = [
+  {
+    title: "About you",
+    description: "Your name and roll number",
+    fields: ["fullName", "rollNumber", "gender"],
+  },
   {
     title: "Your batch",
+    description: "Department and years",
     fields: [
       "departmentId",
       "sessionStartYear",
@@ -112,10 +121,12 @@ const STEPS: { title: string; fields: (keyof Draft)[] }[] = [
   },
   {
     title: "Contact",
+    description: "How the college can reach you",
     fields: ["email", "phone", "city", "district", "country"],
   },
   {
     title: "After college",
+    description: "Optional directory details",
     fields: [
       "employer",
       "jobTitle",
@@ -126,7 +137,11 @@ const STEPS: { title: string; fields: (keyof Draft)[] }[] = [
       "directoryVisible",
     ],
   },
-  { title: "Account", fields: ["password", "confirmPassword", "consent"] },
+  {
+    title: "Account",
+    description: "Password and consent",
+    fields: ["password", "confirmPassword", "consent"],
+  },
 ];
 
 /** Stand-in until the real registerAction lands (Phase 7). The final call
@@ -147,6 +162,7 @@ export function RegisterForm({
   const [pending, setPending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -158,6 +174,17 @@ export function RegisterForm({
     });
   };
 
+  /** Move focus to the newly active step header — keyboard and SR users
+      land on the open page, not lost inside collapsed content. */
+  function focusHeading() {
+    requestAnimationFrame(() => {
+      formRef.current
+        ?.querySelector<HTMLElement>('[aria-current="step"]')
+        ?.focus({ preventScroll: true });
+      window.scrollTo({ top: 0 });
+    });
+  }
+
   function next() {
     const { errors } = fieldErrors(draft);
     const mine = STEPS[step]!.fields.filter((f) => errors[f]);
@@ -167,13 +194,20 @@ export function RegisterForm({
     }
     setErrors({});
     setStep((s) => s + 1);
-    window.scrollTo({ top: 0 });
+    focusHeading();
   }
 
   function back() {
     setErrors({});
     setStep((s) => s - 1);
-    window.scrollTo({ top: 0 });
+    focusHeading();
+  }
+
+  /** Validate a single field on blur — only reports this field, and only
+      when it actually has an error (no clearing noise). */
+  function blurValidate(key: keyof Draft) {
+    const { errors } = fieldErrors(draft);
+    if (errors[key]) setErrors((e) => ({ ...e, [key]: errors[key]! }));
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -195,7 +229,7 @@ export function RegisterForm({
 
   if (submitted) {
     return (
-      <div className="space-y-5">
+      <div className="reg-scope space-y-5">
         <InlineAlert variant="success" title="Registration received">
           If this record can be registered, you will receive an email with next
           steps.
@@ -216,10 +250,14 @@ export function RegisterForm({
 
   const yearSelect = (
     key: "sessionStartYear" | "sessionEndYear" | "passingYear",
+    id: string,
+    describedBy: string | undefined,
   ) => (
     <Select value={draft[key]} onValueChange={(v) => set(key, String(v))}>
       <SelectTrigger
+        id={id}
         className="w-full"
+        aria-describedby={describedBy}
         aria-invalid={errors[key] ? true : undefined}
       >
         <span className="flex-1 text-left">{draft[key] || "Year…"}</span>
@@ -234,432 +272,527 @@ export function RegisterForm({
     </Select>
   );
 
+  /** Nav row inside each step's expanded content. */
+  const nav = (
+    <div className="flex items-center gap-2 pt-1">
+      {step > 0 ? (
+        <Button type="button" variant="outline" size="sm" onClick={back}>
+          <ArrowLeft className="size-4" aria-hidden />
+          Back
+        </Button>
+      ) : null}
+      {isLast ? (
+        <Button type="submit" className="flex-1" loading={pending}>
+          Create account
+        </Button>
+      ) : (
+        <Button type="button" className="flex-1" onClick={next}>
+          Continue
+          <ArrowRight className="size-4" aria-hidden />
+        </Button>
+      )}
+    </div>
+  );
+
+  const errorBanner = errorList.length > 0 && (
+    <InlineAlert variant="destructive" title="Check the highlighted fields">
+      <ul className="list-disc space-y-0.5 pl-4">
+        {errorList.map((m) => (
+          <li key={m}>{m}</li>
+        ))}
+      </ul>
+    </InlineAlert>
+  );
+
   return (
-    <form onSubmit={onSubmit} className="space-y-5" noValidate>
-      {/* Page rail — the register's entries, current one open. */}
-      <nav aria-label="Registration steps" className="space-y-1.5">
-        <ol className="flex items-center gap-1">
-          {STEPS.map((s, i) => (
-            <li key={s.title} className="flex items-center">
-              <button
-                type="button"
-                onClick={() => i < step && (setErrors({}), setStep(i))}
-                disabled={i > step}
-                aria-current={i === step ? "step" : undefined}
-                aria-label={`${s.title}${i < step ? " — done" : i === step ? " — current" : ""}`}
-                className={`flex size-6 items-center justify-center rounded-full border font-mono text-[11px] transition-colors ${
-                  i < step
-                    ? "border-success-ink/30 bg-success-tint text-success-ink"
-                    : i === step
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border text-muted-foreground"
-                }`}
-              >
-                {i < step ? <Check className="size-3" /> : i + 1}
-              </button>
-              {i < STEPS.length - 1 ? (
-                <span
-                  aria-hidden
-                  className={`mx-1 h-px w-5 ${i < step ? "bg-success-ink/40" : "bg-border"}`}
-                />
-              ) : null}
-            </li>
-          ))}
-        </ol>
-        <p className="text-sm">
-          <span className="font-heading font-semibold">
-            {STEPS[step]!.title}
-          </span>
-          <span className="text-muted-foreground">
-            {" "}
-            — page {step + 1} of {STEPS.length}
-          </span>
-        </p>
-      </nav>
-
-      {errorList.length > 0 ? (
-        <InlineAlert variant="destructive" title="Check the highlighted fields">
-          <ul className="list-disc space-y-0.5 pl-4">
-            {errorList.map((m) => (
-              <li key={m}>{m}</li>
-            ))}
-          </ul>
-        </InlineAlert>
-      ) : null}
-
-      {step === 0 ? (
-        <div className="space-y-4">
-          <FormField label="Full name" required error={errors.fullName}>
-            {(id, describedBy) => (
-              <Input
-                id={id}
-                name="fullName"
-                autoComplete="name"
-                required
-                value={draft.fullName}
-                onChange={(e) => set("fullName", e.target.value)}
-                placeholder="Your full name…"
-                aria-describedby={describedBy}
-                aria-invalid={errors.fullName ? true : undefined}
-              />
-            )}
-          </FormField>
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              label="Roll number"
-              required
-              error={errors.rollNumber}
-              hint="As in the college register."
-            >
-              {(id, describedBy) => (
-                <Input
-                  id={id}
-                  name="rollNumber"
-                  autoComplete="off"
-                  spellCheck={false}
-                  required
-                  value={draft.rollNumber}
-                  onChange={(e) => set("rollNumber", e.target.value)}
-                  placeholder="BS-CS-2019-042…"
-                  className="font-mono"
-                  aria-describedby={describedBy}
-                  aria-invalid={errors.rollNumber ? true : undefined}
-                />
-              )}
-            </FormField>
-            <FormField label="Gender (optional)" error={errors.gender}>
-              {(id, describedBy) => (
-                <Select
-                  value={draft.gender}
-                  onValueChange={(v) => set("gender", v as Draft["gender"])}
-                >
-                  <SelectTrigger
-                    id={id}
-                    className="w-full"
-                    aria-describedby={describedBy}
+    <form onSubmit={onSubmit} noValidate className="reg-scope" ref={formRef}>
+      <RegistrationStepper
+        className="max-w-none"
+        steps={[
+          {
+            step: 1,
+            title: STEPS[0]!.title,
+            description: STEPS[0]!.description,
+            content: (
+              <div className="space-y-4">
+                {errorBanner}
+                <FormField label="Full name" required error={errors.fullName}>
+                  {(id, describedBy) => (
+                    <Input
+                      id={id}
+                      name="fullName"
+                      autoComplete="name"
+                      required
+                      value={draft.fullName}
+                      onChange={(e) => set("fullName", e.target.value)}
+                      onBlur={() => blurValidate("fullName")}
+                      placeholder="Your full name…"
+                      aria-describedby={describedBy}
+                      aria-invalid={errors.fullName ? true : undefined}
+                    />
+                  )}
+                </FormField>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    label="Roll number"
+                    required
+                    error={errors.rollNumber}
+                    hint="As in the college register."
                   >
-                    <span className="flex-1 text-left">
-                      {draft.gender
-                        ? draft.gender[0]!.toUpperCase() + draft.gender.slice(1)
-                        : "Select…"}
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </FormField>
-          </div>
-        </div>
-      ) : null}
-
-      {step === 1 ? (
-        <div className="space-y-4">
-          <FormField label="Department" required error={errors.departmentId}>
-            {(id, describedBy) => (
-              <Select
-                value={draft.departmentId}
-                onValueChange={(v) => set("departmentId", String(v))}
-              >
-                <SelectTrigger
-                  id={id}
-                  className="w-full"
-                  aria-describedby={describedBy}
-                  aria-invalid={errors.departmentId ? true : undefined}
+                    {(id, describedBy) => (
+                      <Input
+                        id={id}
+                        name="rollNumber"
+                        autoComplete="off"
+                        spellCheck={false}
+                        required
+                        value={draft.rollNumber}
+                        onChange={(e) => set("rollNumber", e.target.value)}
+                        onBlur={() => blurValidate("rollNumber")}
+                        placeholder="BS-CS-2019-042…"
+                        className="font-mono"
+                        aria-describedby={describedBy}
+                        aria-invalid={errors.rollNumber ? true : undefined}
+                      />
+                    )}
+                  </FormField>
+                  <FormField label="Gender (optional)" error={errors.gender}>
+                    {(id, describedBy) => (
+                      <Select
+                        value={draft.gender}
+                        onValueChange={(v) =>
+                          set("gender", v as Draft["gender"])
+                        }
+                      >
+                        <SelectTrigger
+                          id={id}
+                          className="w-full"
+                          aria-describedby={describedBy}
+                        >
+                          <span className="flex-1 text-left">
+                            {draft.gender
+                              ? draft.gender[0]!.toUpperCase() +
+                                draft.gender.slice(1)
+                              : "Select…"}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </FormField>
+                </div>
+                {nav}
+              </div>
+            ),
+          },
+          {
+            step: 2,
+            title: STEPS[1]!.title,
+            description: STEPS[1]!.description,
+            content: (
+              <div className="space-y-4">
+                {errorBanner}
+                <FormField
+                  label="Department"
+                  required
+                  error={errors.departmentId}
                 >
-                  <span className="flex-1 text-left">
-                    {departments.find((d) => d.id === draft.departmentId)
-                      ?.name ?? "Select your department…"}
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </FormField>
-          <FormField label="Degree" hint="GGCB registers BS graduates for now.">
-            {(id) => <Input id={id} value="BS" disabled readOnly />}
-          </FormField>
-          <div className="grid grid-cols-3 gap-3">
-            <FormField
-              label="Session start"
-              required
-              error={errors.sessionStartYear}
-            >
-              {(id, describedBy) => (
-                <div id={id} aria-describedby={describedBy}>
-                  {yearSelect("sessionStartYear")}
-                </div>
-              )}
-            </FormField>
-            <FormField
-              label="Session end"
-              required
-              error={errors.sessionEndYear}
-            >
-              {(id, describedBy) => (
-                <div id={id} aria-describedby={describedBy}>
-                  {yearSelect("sessionEndYear")}
-                </div>
-              )}
-            </FormField>
-            <FormField label="Passed" required error={errors.passingYear}>
-              {(id, describedBy) => (
-                <div id={id} aria-describedby={describedBy}>
-                  {yearSelect("passingYear")}
-                </div>
-              )}
-            </FormField>
-          </div>
-        </div>
-      ) : null}
-
-      {step === 2 ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <FormField label="Email" required error={errors.email}>
-              {(id, describedBy) => (
-                <Input
-                  id={id}
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  spellCheck={false}
-                  required
-                  value={draft.email}
-                  onChange={(e) => set("email", e.target.value)}
-                  placeholder="you@example.com…"
-                  aria-describedby={describedBy}
-                  aria-invalid={errors.email ? true : undefined}
-                />
-              )}
-            </FormField>
-            <FormField label="Phone" required error={errors.phone}>
-              {(id, describedBy) => (
-                <Input
-                  id={id}
-                  type="tel"
-                  name="phone"
-                  autoComplete="tel"
-                  required
-                  value={draft.phone}
-                  onChange={(e) => set("phone", e.target.value)}
-                  placeholder="+92 300 0000000…"
-                  aria-describedby={describedBy}
-                  aria-invalid={errors.phone ? true : undefined}
-                />
-              )}
-            </FormField>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {(["city", "district", "country"] as const).map((k) => (
-              <FormField
-                key={k}
-                label={`${k[0]!.toUpperCase()}${k.slice(1)} (optional)`}
-                error={errors[k]}
-              >
-                {(id, describedBy) => (
-                  <Input
-                    id={id}
-                    name={k}
-                    autoComplete={
-                      k === "country"
-                        ? "country-name"
-                        : k === "city"
-                          ? "address-level2"
-                          : "address-level1"
+                  {(id, describedBy) => (
+                    <Select
+                      value={draft.departmentId}
+                      onValueChange={(v) => set("departmentId", String(v))}
+                    >
+                      <SelectTrigger
+                        id={id}
+                        className="w-full"
+                        aria-describedby={describedBy}
+                        aria-invalid={errors.departmentId ? true : undefined}
+                      >
+                        <span className="flex-1 text-left">
+                          {departments.find((d) => d.id === draft.departmentId)
+                            ?.name ?? "Select your department…"}
+                        </span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </FormField>
+                <FormField
+                  label="Degree"
+                  hint="GGCB registers BS graduates for now."
+                >
+                  {(id) => <Input id={id} value="BS" disabled readOnly />}
+                </FormField>
+                <div className="grid grid-cols-3 gap-3">
+                  <FormField
+                    label="Session start"
+                    required
+                    error={errors.sessionStartYear}
+                  >
+                    {(id, describedBy) =>
+                      yearSelect("sessionStartYear", id, describedBy)
                     }
-                    value={draft[k]}
-                    onChange={(e) => set(k, e.target.value)}
-                    placeholder="…"
-                    aria-describedby={describedBy}
+                  </FormField>
+                  <FormField
+                    label="Session end"
+                    required
+                    error={errors.sessionEndYear}
+                  >
+                    {(id, describedBy) =>
+                      yearSelect("sessionEndYear", id, describedBy)
+                    }
+                  </FormField>
+                  <FormField label="Passed" required error={errors.passingYear}>
+                    {(id, describedBy) =>
+                      yearSelect("passingYear", id, describedBy)
+                    }
+                  </FormField>
+                </div>
+                {nav}
+              </div>
+            ),
+          },
+          {
+            step: 3,
+            title: STEPS[2]!.title,
+            description: STEPS[2]!.description,
+            content: (
+              <div className="space-y-4">
+                {errorBanner}
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="Email" required error={errors.email}>
+                    {(id, describedBy) => (
+                      <Input
+                        id={id}
+                        type="email"
+                        name="email"
+                        autoComplete="email"
+                        spellCheck={false}
+                        required
+                        value={draft.email}
+                        onChange={(e) => set("email", e.target.value)}
+                        onBlur={() => blurValidate("email")}
+                        placeholder="you@example.com…"
+                        aria-describedby={describedBy}
+                        aria-invalid={errors.email ? true : undefined}
+                      />
+                    )}
+                  </FormField>
+                  <FormField label="Phone" required error={errors.phone}>
+                    {(id, describedBy) => (
+                      <Input
+                        id={id}
+                        type="tel"
+                        name="phone"
+                        autoComplete="tel"
+                        required
+                        value={draft.phone}
+                        onChange={(e) => set("phone", e.target.value)}
+                        onBlur={() => blurValidate("phone")}
+                        placeholder="+92 300 0000000…"
+                        aria-describedby={describedBy}
+                        aria-invalid={errors.phone ? true : undefined}
+                      />
+                    )}
+                  </FormField>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {(["city", "district", "country"] as const).map((k) => (
+                    <FormField
+                      key={k}
+                      label={`${k[0]!.toUpperCase()}${k.slice(1)} (optional)`}
+                      error={errors[k]}
+                    >
+                      {(id, describedBy) => (
+                        <Input
+                          id={id}
+                          name={k}
+                          autoComplete={
+                            k === "country"
+                              ? "country-name"
+                              : k === "city"
+                                ? "address-level2"
+                                : "address-level1"
+                          }
+                          value={draft[k]}
+                          onChange={(e) => set(k, e.target.value)}
+                          onBlur={() => blurValidate(k)}
+                          placeholder="…"
+                          aria-describedby={describedBy}
+                        />
+                      )}
+                    </FormField>
+                  ))}
+                </div>
+                {nav}
+              </div>
+            ),
+          },
+          {
+            step: 4,
+            title: STEPS[3]!.title,
+            description: STEPS[3]!.description,
+            content: (
+              <div className="space-y-4">
+                {errorBanner}
+                <p className="text-sm text-muted-foreground">
+                  Everything on this page is optional — it fills out your
+                  directory entry.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="Employer" error={errors.employer}>
+                    {(id, describedBy) => (
+                      <Input
+                        id={id}
+                        name="organization"
+                        autoComplete="organization"
+                        value={draft.employer}
+                        onChange={(e) => set("employer", e.target.value)}
+                        onBlur={() => blurValidate("employer")}
+                        placeholder="Where you work…"
+                        aria-describedby={describedBy}
+                      />
+                    )}
+                  </FormField>
+                  <FormField label="Job title" error={errors.jobTitle}>
+                    {(id, describedBy) => (
+                      <Input
+                        id={id}
+                        name="organization-title"
+                        autoComplete="organization-title"
+                        value={draft.jobTitle}
+                        onChange={(e) => set("jobTitle", e.target.value)}
+                        onBlur={() => blurValidate("jobTitle")}
+                        placeholder="Your role…"
+                        aria-describedby={describedBy}
+                      />
+                    )}
+                  </FormField>
+                </div>
+                <FormField label="Sector" error={errors.sector}>
+                  {(id, describedBy) => (
+                    <Input
+                      id={id}
+                      value={draft.sector}
+                      onChange={(e) => set("sector", e.target.value)}
+                      onBlur={() => blurValidate("sector")}
+                      placeholder="Education, health, IT…"
+                      aria-describedby={describedBy}
+                    />
+                  )}
+                </FormField>
+                <FormField
+                  label="Bio"
+                  hint={`${draft.bio.length}/1000 — a line or two for the directory.`}
+                  error={errors.bio}
+                >
+                  {(id, describedBy) => (
+                    <Textarea
+                      id={id}
+                      value={draft.bio}
+                      onChange={(e) => set("bio", e.target.value)}
+                      onBlur={() => blurValidate("bio")}
+                      maxLength={1000}
+                      rows={3}
+                      placeholder="What you've been up to since college…"
+                      aria-describedby={describedBy}
+                    />
+                  )}
+                </FormField>
+                <FormField
+                  label="LinkedIn or portfolio"
+                  error={errors.linkedin}
+                >
+                  {(id, describedBy) => (
+                    <Input
+                      id={id}
+                      type="url"
+                      name="url"
+                      autoComplete="url"
+                      spellCheck={false}
+                      value={draft.linkedin}
+                      onChange={(e) => set("linkedin", e.target.value)}
+                      onBlur={() => blurValidate("linkedin")}
+                      placeholder="https://…"
+                      aria-describedby={describedBy}
+                    />
+                  )}
+                </FormField>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={draft.mentorAvailable}
+                      onCheckedChange={(v) =>
+                        set("mentorAvailable", v === true)
+                      }
+                      aria-labelledby="mentor-label"
+                      className="mt-0.5"
+                    />
+                    <p id="mentor-label" className="text-sm leading-snug">
+                      Available to mentor current students
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={draft.directoryVisible}
+                      onCheckedChange={(v) =>
+                        set("directoryVisible", v === true)
+                      }
+                      aria-labelledby="dir-label"
+                      className="mt-0.5"
+                    />
+                    <p id="dir-label" className="text-sm leading-snug">
+                      Show me in the alumni directory once verified
+                    </p>
+                  </div>
+                </div>
+                {nav}
+              </div>
+            ),
+          },
+          {
+            step: 5,
+            title: STEPS[4]!.title,
+            description: STEPS[4]!.description,
+            content: (
+              <div className="space-y-4">
+                {errorBanner}
+                <div>
+                  <p className="mb-2 text-sm text-muted-foreground">
+                    Your entry in the register
+                  </p>
+                  <dl className="divide-y divide-border rounded-md border text-sm">
+                    {(
+                      [
+                        ["Name", draft.fullName, 0],
+                        ["Roll number", draft.rollNumber, 0, "mono"],
+                        [
+                          "Department",
+                          departments.find((d) => d.id === draft.departmentId)
+                            ?.name,
+                          1,
+                        ],
+                        [
+                          "Session",
+                          `${draft.sessionStartYear}–${draft.sessionEndYear} · passed ${draft.passingYear}`,
+                          1,
+                        ],
+                        ["Email", draft.email, 2],
+                        ["Phone", draft.phone, 2],
+                        [
+                          "Place",
+                          [draft.city, draft.district, draft.country]
+                            .filter(Boolean)
+                            .join(", "),
+                          2,
+                        ],
+                        [
+                          "Work",
+                          [draft.jobTitle, draft.employer]
+                            .filter(Boolean)
+                            .join(" · "),
+                          3,
+                        ],
+                      ] as [string, string | undefined, number, string?][]
+                    )
+                      .filter(([, v]) => v)
+                      .map(([label, value, page, mono]) => (
+                        <div
+                          key={label}
+                          className="flex items-baseline justify-between gap-3 px-3 py-2"
+                        >
+                          <dt className="shrink-0 text-muted-foreground">
+                            {label}
+                          </dt>
+                          <dd
+                            className={`min-w-0 truncate text-right ${mono ? "font-mono text-[13px]" : ""}`}
+                          >
+                            {value}
+                          </dd>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setErrors({});
+                              setStep(page);
+                            }}
+                            className="shrink-0 text-xs text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      ))}
+                  </dl>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <PasswordField
+                    label="Password"
+                    name="password"
+                    autoComplete="new-password"
+                    value={draft.password}
+                    onValueChange={(v) => set("password", v)}
+                    error={errors.password}
+                    showPolicyHint
                   />
-                )}
-              </FormField>
-            ))}
-          </div>
-        </div>
-      ) : null}
+                  <PasswordField
+                    label="Confirm password"
+                    name="confirmPassword"
+                    autoComplete="new-password"
+                    value={draft.confirmPassword}
+                    onValueChange={(v) => set("confirmPassword", v)}
+                    confirmValue={draft.password}
+                    error={errors.confirmPassword}
+                    showPolicyHint
+                  />
+                </div>
+                <div className="space-y-1.5 rounded-md border border-dashed p-3">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={draft.consent}
+                      onCheckedChange={(v) => set("consent", v === true)}
+                      aria-labelledby="consent-label"
+                      aria-describedby={
+                        errors.consent ? "consent-error" : undefined
+                      }
+                      aria-invalid={errors.consent ? true : undefined}
+                      className="mt-0.5"
+                    />
+                    <p id="consent-label" className="text-sm leading-snug">
+                      These details are mine and the college may verify them
+                      against the register before approving my account.
+                    </p>
+                  </div>
+                  {errors.consent ? (
+                    <FieldError id="consent-error" role="alert">
+                      {errors.consent}
+                    </FieldError>
+                  ) : null}
+                </div>
+                {nav}
+              </div>
+            ),
+          },
+        ]}
+        currentStep={step}
+        headerTitle="Register as alumni"
+        headerStatus={`Page ${step + 1} of ${STEPS.length}`}
+        onStepClick={(i) => {
+          setErrors({});
+          setStep(i);
+          focusHeading();
+        }}
+      />
 
-      {step === 3 ? (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Everything on this page is optional — it fills out your directory
-            entry.
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <FormField label="Employer" error={errors.employer}>
-              {(id, describedBy) => (
-                <Input
-                  id={id}
-                  name="organization"
-                  autoComplete="organization"
-                  value={draft.employer}
-                  onChange={(e) => set("employer", e.target.value)}
-                  placeholder="Where you work…"
-                  aria-describedby={describedBy}
-                />
-              )}
-            </FormField>
-            <FormField label="Job title" error={errors.jobTitle}>
-              {(id, describedBy) => (
-                <Input
-                  id={id}
-                  name="organization-title"
-                  autoComplete="organization-title"
-                  value={draft.jobTitle}
-                  onChange={(e) => set("jobTitle", e.target.value)}
-                  placeholder="Your role…"
-                  aria-describedby={describedBy}
-                />
-              )}
-            </FormField>
-          </div>
-          <FormField label="Sector" error={errors.sector}>
-            {(id, describedBy) => (
-              <Input
-                id={id}
-                value={draft.sector}
-                onChange={(e) => set("sector", e.target.value)}
-                placeholder="Education, health, IT…"
-                aria-describedby={describedBy}
-              />
-            )}
-          </FormField>
-          <FormField
-            label="Bio"
-            hint={`${draft.bio.length}/1000 — a line or two for the directory.`}
-            error={errors.bio}
-          >
-            {(id, describedBy) => (
-              <Textarea
-                id={id}
-                value={draft.bio}
-                onChange={(e) => set("bio", e.target.value)}
-                maxLength={1000}
-                rows={3}
-                placeholder="What you've been up to since college…"
-                aria-describedby={describedBy}
-              />
-            )}
-          </FormField>
-          <FormField label="LinkedIn or portfolio" error={errors.linkedin}>
-            {(id, describedBy) => (
-              <Input
-                id={id}
-                type="url"
-                name="url"
-                autoComplete="url"
-                spellCheck={false}
-                value={draft.linkedin}
-                onChange={(e) => set("linkedin", e.target.value)}
-                placeholder="https://…"
-                aria-describedby={describedBy}
-              />
-            )}
-          </FormField>
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <Checkbox
-                checked={draft.mentorAvailable}
-                onCheckedChange={(v) => set("mentorAvailable", v === true)}
-                aria-labelledby="mentor-label"
-                className="mt-0.5"
-              />
-              <p id="mentor-label" className="text-sm leading-snug">
-                Available to mentor current students
-              </p>
-            </div>
-            <div className="flex items-start gap-3">
-              <Checkbox
-                checked={draft.directoryVisible}
-                onCheckedChange={(v) => set("directoryVisible", v === true)}
-                aria-labelledby="dir-label"
-                className="mt-0.5"
-              />
-              <p id="dir-label" className="text-sm leading-snug">
-                Show me in the alumni directory once verified
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {step === 4 ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <PasswordField
-              label="Password"
-              name="password"
-              autoComplete="new-password"
-              value={draft.password}
-              onValueChange={(v) => set("password", v)}
-              error={errors.password}
-              showPolicyHint
-            />
-            <PasswordField
-              label="Confirm password"
-              name="confirmPassword"
-              autoComplete="new-password"
-              value={draft.confirmPassword}
-              onValueChange={(v) => set("confirmPassword", v)}
-              confirmValue={draft.password}
-              error={errors.confirmPassword}
-              showPolicyHint
-            />
-          </div>
-          <div className="space-y-1.5 rounded-md border border-dashed p-3">
-            <div className="flex items-start gap-3">
-              <Checkbox
-                checked={draft.consent}
-                onCheckedChange={(v) => set("consent", v === true)}
-                aria-labelledby="consent-label"
-                aria-describedby={errors.consent ? "consent-error" : undefined}
-                aria-invalid={errors.consent ? true : undefined}
-                className="mt-0.5"
-              />
-              <p id="consent-label" className="text-sm leading-snug">
-                These details are mine and the college may verify them against
-                the register before approving my account.
-              </p>
-            </div>
-            {errors.consent ? (
-              <FieldError id="consent-error" role="alert">
-                {errors.consent}
-              </FieldError>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
-      <div className="flex items-center gap-2 border-t pt-4">
-        {step > 0 ? (
-          <Button type="button" variant="outline" onClick={back}>
-            <ArrowLeft className="size-4" aria-hidden />
-            Back
-          </Button>
-        ) : null}
-        {isLast ? (
-          <Button type="submit" className="flex-1" loading={pending}>
-            Create account
-          </Button>
-        ) : (
-          <Button type="button" className="flex-1" onClick={next}>
-            Continue
-            <ArrowRight className="size-4" aria-hidden />
-          </Button>
-        )}
-      </div>
-
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="mt-4 text-center text-sm text-muted-foreground">
         Already registered?{" "}
         <Link
           href="/login"

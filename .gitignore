@@ -31,7 +31,6 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
 !.env.example
 
 # playwright
@@ -48,3 +47,7 @@ next-env.d.ts
 design-review/
 
 .playwright-mcp/
+
+# Devin CLI local MCP config (may contain API keys)
+.devin/mcp_config.local.json
+config.bat

@@ -286,3 +286,24 @@
     }
   }
 }
+
+/*
+ * Register scope -- an independent identity for the 21st.dev stepper flow,
+ * deliberately not the evergreen ledger: flashy institution green, rounder
+ * geometry, mint-tinted neutrals. Only tokens; components inside keep
+ * their semantics.
+ */
+.reg-scope,
+.login-scope {
+  --primary: #16a34a;
+  --primary-foreground: #ffffff;
+  --ring: #16a34a;
+  --input: #bbf7d0;
+  --border: #dcfce7;
+  --muted-foreground: #4b5563;
+  --secondary: #f0fdf4;
+  --secondary-foreground: #14532d;
+  --accent: #dcfce7;
+  --accent-foreground: #14532d;
+  --radius: 0.75rem;
+}
