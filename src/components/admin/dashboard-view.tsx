@@ -275,7 +275,8 @@ export function AdminDashboardView({
           </ChartCard>
           {deptTop.mock ? (
             <p className="mt-1.5 text-xs text-muted-foreground">
-              Sample figures — the per-department count query isn't wired yet.
+              Sample figures — the per-department count query isn&apos;t wired
+              yet.
             </p>
           ) : null}
         </section>
